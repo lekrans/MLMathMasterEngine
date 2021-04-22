@@ -1,6 +1,7 @@
 import XCTest
 @testable import MLMathMasterEngine
 
+@available(iOS 13.0, *)
 final class MLMathMasterEngineTests: XCTestCase {
     func testCreateEngine() {
         let _ = MLMathMasterEngine()

@@ -4,6 +4,7 @@ import Foundation
 
 // MARK: - Game Category:
 /// Specifies what type of operator to test for like .`add`, .`mult`
+@available(iOS 13.0, *)
 public enum MLMathMasterGameCategory {
     case add, subtract, multiply, divide, random
     
@@ -32,6 +33,7 @@ public enum MLMathMasterGameCategory {
 
 // MARK: - GameType
 /// Game Type: What type of game(test) we are doing, like .sequence (like tables), .random
+@available(iOS 13.0, *)
 public enum MLMathMasterGameType {
     case sequence
 }
@@ -43,6 +45,7 @@ public enum MLMathMasterGameType {
 
 // MARK: - GameData
 /// Game Data: Holds information about one game, like `category`, `type`, `base` and so on
+@available(iOS 13.0, *)
 public struct MLMathMasterGameData {
     var category: MLMathMasterGameCategory
     var type: MLMathMasterGameType
@@ -55,6 +58,7 @@ public struct MLMathMasterGameData {
 
 
 // MARK: - GameStatus
+@available(iOS 13.0, *)
 public enum MLMathMasterGameStatus {
     case none, started, stopped
 }
@@ -66,6 +70,7 @@ public enum MLMathMasterGameStatus {
 
 // MARK: - GameSettings
 /// Game settings: settings for the MLMathMaster game
+@available(iOS 13.0, *)
 public struct MLMathMasterGameSettings {
     var noOfQuestions: Int = 10
 }
@@ -77,6 +82,7 @@ public struct MLMathMasterGameSettings {
 
 // MARK: - Question
 /// Question struct: Holds the information about one question
+@available(iOS 13.0, *)
 public class MLMathMasterQuestion: Identifiable {
     public var id = UUID()
     public var value1: Int
@@ -134,7 +140,8 @@ public struct MLMathMasterQuestionResult {
 /// The MLMathMaster game engine.
 /// The controller of the game.
 /// You initialize a new game by calling `func newGame()` and specify what type and category and so on you want to test
-public class MLMathMasterEngine {
+@available(iOS 13.0, *)
+public class MLMathMasterEngine: ObservableObject {
     
     // MARK: - private properties
     var noOfFetchedQuestions: Int = 0
@@ -151,7 +158,7 @@ public class MLMathMasterEngine {
     // MARK: - public properties
     var gameData: MLMathMasterGameData?
     var settings: MLMathMasterGameSettings
-    var questions: [MLMathMasterQuestion] = []
+    @Published var questions: [MLMathMasterQuestion] = []
     var unansweredQuestions: [MLMathMasterQuestion] = []
     var status: MLMathMasterGameStatus = .none
 

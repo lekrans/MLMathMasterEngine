@@ -102,6 +102,13 @@ public class MLMathMasterQuestion: Identifiable {
     public var startTime: DispatchTime?
     public var stopTime: DispatchTime?
     
+    public var totalTime: Double {
+        guard startTime != nil, stopTime != nil else {
+            return -1
+        }
+        return Double(stopTime!.rawValue - startTime!.rawValue) / Double(1000000000)
+    }
+    
     
     init(value1: Int, value2: Int, category: MLMathMasterGameCategory) {
         self.value1 = value1

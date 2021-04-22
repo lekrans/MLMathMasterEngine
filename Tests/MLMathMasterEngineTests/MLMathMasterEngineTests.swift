@@ -538,10 +538,11 @@ final class MLMathMasterEngineTests: XCTestCase {
         }
         
         waitForExpectations(timeout: 5, handler: nil)
-        let timeDifference = q1.stopTime!.asSeconds - q1.startTime!.asSeconds
+        let timeDifference = q1.totalTime
         print("timeDifference = \(timeDifference)")
         XCTAssert( timeDifference >= 3, "Time should be 3 sek or more.. was \(timeDifference)")
     }
+    
 
 
     static var allTests = [

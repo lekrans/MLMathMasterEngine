@@ -3,7 +3,7 @@ import XCTest
 
 final class MLMathMasterEngineTests: XCTestCase {
     func testCreateEngine() {
-        let engine = MLMathMasterEngine()
+        let _ = MLMathMasterEngine()
     }
 
     func testCreatedEngineShouldHaveStatusNone() {
@@ -169,7 +169,7 @@ final class MLMathMasterEngineTests: XCTestCase {
         engine.newGame(category: .add, type: .sequence, base: [2])
 
         var question = engine.getQuestion()
-        engine.evaluateQuestion(question: &question!, answer: 2)
+        let _ = engine.evaluateQuestion(question: &question!, answer: 2)
 
         let index = engine.questions.firstIndex { (q) -> Bool in
             q.id == question!.id
@@ -236,7 +236,7 @@ final class MLMathMasterEngineTests: XCTestCase {
         let engine = MLMathMasterEngine()
         engine.newGame(category: .add, type: .sequence, base: [2])
         if var question = engine.getQuestion() {
-            engine.evaluateQuestion(question: &question, answer: 3000)
+            let _ = engine.evaluateQuestion(question: &question, answer: 3000)
         }
         
         XCTAssert(engine.answeredQuestions == 1, "answeredQuestions should be 1 was \(engine.answeredQuestions)")
@@ -250,11 +250,11 @@ final class MLMathMasterEngineTests: XCTestCase {
         engine.newGame(category: .add, type: .sequence, base: [2])
         if var question = engine.getQuestion() {
             print("Question \(question)")
-            engine.evaluateQuestion(question: &question, answer: 3000)
+            let _ = engine.evaluateQuestion(question: &question, answer: 3000)
         }
         if var question = engine.getQuestion() {
             print("Question \(question)")
-            engine.evaluateQuestion(question: &question, answer: 3)
+            let _ = engine.evaluateQuestion(question: &question, answer: 3)
             print("Question after \(question)")
         }
 
@@ -279,7 +279,7 @@ final class MLMathMasterEngineTests: XCTestCase {
         engine.activate(question: question)
         XCTAssert(question.startTime != nil, "StartTime should NOT be nil")
         XCTAssert(question.stopTime == nil, "StartTime should be nil")
-        engine.evaluateQuestion(question: &question, answer: 23)
+        let _ = engine.evaluateQuestion(question: &question, answer: 23)
         XCTAssert(question.startTime != nil, "StartTime should have a value, was nil")
         XCTAssert(question.stopTime != nil, "stopTime should have a value, was nil")
     }
@@ -342,7 +342,7 @@ final class MLMathMasterEngineTests: XCTestCase {
         let expectation = self.expectation(description: "Answer")
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.1) {
-            engine.evaluateQuestion(question: &q1, answer: 3)
+            let _ = engine.evaluateQuestion(question: &q1, answer: 3)
             expectation.fulfill()
         }
         

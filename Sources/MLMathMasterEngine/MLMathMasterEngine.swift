@@ -4,7 +4,7 @@ import Foundation
 
 // MARK: - Game Category:
 /// Specifies what type of operator to test for like .`add`, .`mult`
-enum MLMathMasterGameCategory {
+public enum MLMathMasterGameCategory {
     case add
 }
 
@@ -14,7 +14,7 @@ enum MLMathMasterGameCategory {
 
 // MARK: - GameType
 /// Game Type: What type of game(test) we are doing, like .sequence (like tables), .random
-enum MLMathMasterGameType {
+public enum MLMathMasterGameType {
     case sequence
 }
 
@@ -25,7 +25,7 @@ enum MLMathMasterGameType {
 
 // MARK: - GameData
 /// Game Data: Holds information about one game, like `category`, `type`, `base` and so on
-struct MLMathMasterGameData {
+public struct MLMathMasterGameData {
     var category: MLMathMasterGameCategory
     var type: MLMathMasterGameType
     var base: [Int] = []
@@ -37,7 +37,7 @@ struct MLMathMasterGameData {
 
 
 // MARK: - GameStatus
-enum MLMathMasterGameStatus {
+public enum MLMathMasterGameStatus {
     case none, started, stopped
 }
 
@@ -48,7 +48,7 @@ enum MLMathMasterGameStatus {
 
 // MARK: - GameSettings
 /// Game settings: settings for the MLMathMaster game
-struct MLMathMasterGameSettings {
+public struct MLMathMasterGameSettings {
     var noOfQuestions: Int = 10
 }
 
@@ -59,8 +59,8 @@ struct MLMathMasterGameSettings {
 
 // MARK: - Question
 /// Question struct: Holds the information about one question
-class MLMathMasterQuestion: Identifiable {
-    var id = UUID()
+public class MLMathMasterQuestion: Identifiable {
+    public var id = UUID()
     var value1: Int
     var value2: Int
     var result: MLMathMasterQuestionResult?
@@ -90,7 +90,7 @@ class MLMathMasterQuestion: Identifiable {
 
 // MARK: - QuestionResult
 /// Result struct containing information about a question
-struct MLMathMasterQuestionResult {
+public struct MLMathMasterQuestionResult {
     var answer: Int
     var expectedAnswer: Int
     var success: Bool {
@@ -110,7 +110,7 @@ struct MLMathMasterQuestionResult {
 /// The MLMathMaster game engine.
 /// The controller of the game.
 /// You initialize a new game by calling `func newGame()` and specify what type and category and so on you want to test
-class MLMathMasterEngine {
+public class MLMathMasterEngine {
     
     // MARK: - private properties
     var noOfFetchedQuestions: Int = 0
@@ -256,7 +256,7 @@ class MLMathMasterEngine {
     ///   - type: MLMathMasterGameType: Wheter it is .sequense (like tables) or .random (for challange)
     ///   - base: [Int], array of what numbers are the base for testing.. like [2] .. testing variants based on to like (2+3 if .add) (2*6 if .mult) and so on
     ///   - noOfQuestions: Optional number of questions.. overrides the `settings.noOfQuestions` to produce
-    func newGame(
+    public func newGame(
         category: MLMathMasterGameCategory,
         type: MLMathMasterGameType,
         base: [Int],
@@ -273,7 +273,7 @@ class MLMathMasterEngine {
     /// The default value for `count` is one.. meaning that if count is not specified it will return one question
     /// - Parameter count: The maximum numbers of questions we want to get
     /// - Returns: Optional array of questions. Max will be `count`. If there is not enough questions left to satisfy `count` the remaing questions are returned. If there are no more questions to return it will return nil
-    func getQuestions(by count: Int = 1) -> [MLMathMasterQuestion]? {
+    public func getQuestions(by count: Int = 1) -> [MLMathMasterQuestion]? {
         guard questions.count > self.noOfFetchedQuestions else {
             return nil
         }
@@ -288,7 +288,7 @@ class MLMathMasterEngine {
     
     /// Get a single question. self.noOfFetchedQuestions will be incremented. If there are no more questions this method returns nil
     /// - Returns: One question if there are questions left.. otherwise nil
-    func getQuestion() -> MLMathMasterQuestion? {
+    public func getQuestion() -> MLMathMasterQuestion? {
         guard questions.count > self.noOfFetchedQuestions else {
             currentQuestion = nil
             return nil
@@ -310,7 +310,7 @@ class MLMathMasterEngine {
     ///   - question: <#question description#>
     ///   - answer: <#answer description#>
     /// - Returns: <#description#>
-    func evaluateQuestion(question: inout MLMathMasterQuestion, answer: Int) -> MLMathMasterQuestionResult {
+    public func evaluateQuestion(question: inout MLMathMasterQuestion, answer: Int) -> MLMathMasterQuestionResult {
         let correctAnswer = getResultOf(question: question)
         let result = MLMathMasterQuestionResult(
             answer: answer,
@@ -321,7 +321,7 @@ class MLMathMasterEngine {
         return result
     }
     
-    func activate(question: MLMathMasterQuestion) {
+    public func activate(question: MLMathMasterQuestion) {
         currentQuestion = question
         question.active = true
     }

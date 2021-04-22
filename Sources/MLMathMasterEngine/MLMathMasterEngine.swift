@@ -5,7 +5,25 @@ import Foundation
 // MARK: - Game Category:
 /// Specifies what type of operator to test for like .`add`, .`mult`
 public enum MLMathMasterGameCategory {
-    case add
+    case add, subtract, multiply, divide, random
+    
+    static func random() -> MLMathMasterGameCategory {
+        return [Self.add, Self.multiply, Self.subtract].randomElement()!
+    }
+    
+    public func asString() -> String{
+        switch  self {
+        case .add:
+            return "+"
+        case .subtract:
+            return  "-"
+        case .multiply:
+            return "*"
+        default:
+            return "random"
+        }
+    }
+    
 }
 
 
@@ -63,6 +81,7 @@ public class MLMathMasterQuestion: Identifiable {
     public var id = UUID()
     public var value1: Int
     public var value2: Int
+    public var category: MLMathMasterGameCategory
     public var result: MLMathMasterQuestionResult?
     public var active: Bool = false {
         willSet {
@@ -78,9 +97,14 @@ public class MLMathMasterQuestion: Identifiable {
     public var stopTime: DispatchTime?
     
     
-    init(value1: Int, value2: Int) {
+    init(value1: Int, value2: Int, category: MLMathMasterGameCategory) {
         self.value1 = value1
         self.value2 = value2
+        self.category = category
+    }
+    
+    public func asString() -> String {
+        return "\(value1) \(category.asString()) \(value2)"
     }
 }
 
@@ -161,9 +185,19 @@ public class MLMathMasterEngine {
     /// Reset and regenerates new questions based on the `count` value. These questions are stored in the `self.questions` array
     /// - Parameter count: No of questions to produce
     private func generateNewQuestions(count: Int) {
+        
+        guard let gameData = self.gameData else {
+            fatalError("No GameData when generating questions")
+        }
+        
         questions = []
         for i in 1...count {
-            questions.append(MLMathMasterQuestion(value1: getValue1(), value2: getValue2(index: i)))
+            let category = gameData.category != .random ? gameData.category : MLMathMasterGameCategory.random()
+            
+            questions.append(MLMathMasterQuestion(
+                                value1: getValue1(),
+                                value2: getValue2(index: i),
+                                category: category))
         }
         /// value semantic so this is a full copy
         self.unansweredQuestions = questions
@@ -181,6 +215,7 @@ public class MLMathMasterEngine {
                 return gameData.base[Int.random(in: 0...gameData.base.count-1)]
             }
         } else {
+            print("No GameData \(#function)")
             return 0
         }
     }
@@ -195,6 +230,7 @@ public class MLMathMasterEngine {
             let value = gameData.type == .sequence ? index - 1: Int.random(in: 0...9)
             return value
         } else {
+            print("No GameData \(#function)")
             return 0
         }
     }
@@ -232,9 +268,13 @@ public class MLMathMasterEngine {
     /// - Parameter question: <#question description#>
     /// - Returns: <#description#>
     func getResultOf(question: MLMathMasterQuestion) -> Int {
-        switch gameData?.category {
+        switch question.category {
         case .add:
             return question.value1 + question.value2
+        case .subtract:
+            return question.value1 - question.value2
+        case .multiply:
+            return question.value1 * question.value2
         default:
             return -1
         }
@@ -261,7 +301,7 @@ public class MLMathMasterEngine {
         type: MLMathMasterGameType,
         base: [Int],
         noOfQuestions: Int? = nil) {
-        self.gameData = MLMathMasterGameData(category: .add, type: type, base: base)
+        self.gameData = MLMathMasterGameData(category: category, type: type, base: base)
         generateNewQuestions(count: noOfQuestions ?? self.settings.noOfQuestions)
         self.noOfFetchedQuestions = 0
         self.status = .started
@@ -313,6 +353,9 @@ public class MLMathMasterEngine {
     /// - Returns: <#description#>
     public func evaluateQuestion(question: inout MLMathMasterQuestion, answer: Int) -> MLMathMasterQuestionResult {
         let correctAnswer = getResultOf(question: question)
+        print("currectAnswer = \(correctAnswer)")
+        print("Answer = \(answer)")
+        print("category = \(question.category)")
         let result = MLMathMasterQuestionResult(
             answer: answer,
             expectedAnswer: correctAnswer)

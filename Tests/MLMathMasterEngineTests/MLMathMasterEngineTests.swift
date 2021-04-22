@@ -44,6 +44,9 @@ final class MLMathMasterEngineTests: XCTestCase {
         XCTAssertNotNil(engine.questions[0].value2)
     }
     
+    
+    // MARK: - Question generation - add
+    
     func testQuestionGeneratedFromSequenceWithOneAsBase() {
         let engine = MLMathMasterEngine()
         engine.newGame(category: .add, type: .sequence, base: [1])
@@ -97,6 +100,65 @@ final class MLMathMasterEngineTests: XCTestCase {
         XCTAssert(noOfFours > 0, "NoOfFours should be greater than 0.. was \(noOfFours)")
         XCTAssert(noOfSixs > 0, "NoOfSixs should be greater than 0.. was \(noOfSixs)")
     }
+    
+    
+    // MARK: - .... subtract
+    func testQuestionGeneratedFromSequenceWithOneAsBaseSubtract() {
+        let engine = MLMathMasterEngine()
+        engine.newGame(category: .subtract, type: .sequence, base: [1])
+        for i in 0...9 {
+            print("testing \(i)")
+            XCTAssertTrue(engine.questions[i].value1 == 1 && engine.questions[i].value2 == i, "value1 should be 2 (was \(String(describing: engine.questions[i].value1)), value2 should be \(i) (was \(String(describing: engine.questions[i].value2)))")
+        }
+    }
+
+    func testQuestionGeneratedFromSequenceWithTwoAsBaseSubtract() {
+        let engine = MLMathMasterEngine()
+        engine.newGame(category: .subtract, type: .sequence, base: [2])
+        
+        for i in 0...9 {
+            print("testing \(i)")
+            XCTAssertTrue(engine.questions[i].value1 == 2 && engine.questions[i].value2 == i, "value1 should be 2 (was \(String(describing: engine.questions[i].value1)), value2 should be \(i) (was \(String(describing: engine.questions[i].value2)))")
+        }
+    }
+
+    
+    func testQuestionGeneratedFromSequenceWithOneAndFourAndSixAsBaseSubtract() {
+        let engine = MLMathMasterEngine()
+        engine.newGame(category: .subtract, type: .sequence, base: [1, 4, 6], noOfQuestions: 100)
+
+        var noOfOnes: Int = 0
+        var noOfFours: Int = 0
+        var noOfSixs: Int = 0
+        var otherNumberFound = false
+
+        for i in 0...99 {
+            print("testing \(i)")
+            let question = engine.questions[i]
+            let value1 = question.value1
+            let value2 = question.value2
+            
+            switch value1 {
+            case 1:
+                noOfOnes += 1
+            case 4:
+                noOfFours += 1
+            case 6:
+                noOfSixs += 1
+            default:
+                otherNumberFound = true
+            }
+
+            XCTAssertTrue(value1 == 1 || value1 == 4 || value1 == 6  && engine.questions[i].value2 == i, "value1 should be 1, 4 or 6 (was \(String(value1)), value2 should be \(i) (was \(String(describing: value2)))")
+        }
+        XCTAssertFalse(otherNumberFound, "otherNumbersFound should be false.. was true")
+        XCTAssert(noOfOnes > 0, "NoOfOnes should be greater than 0.. was \(noOfOnes)")
+        XCTAssert(noOfFours > 0, "NoOfFours should be greater than 0.. was \(noOfFours)")
+        XCTAssert(noOfSixs > 0, "NoOfSixs should be greater than 0.. was \(noOfSixs)")
+    }
+    
+    
+    // MARK: - GetQuestions
     
     func testGetGroupOfQuestionsSpecifiedByCount5() {
         let engine = MLMathMasterEngine()
@@ -153,6 +215,9 @@ final class MLMathMasterEngineTests: XCTestCase {
         XCTAssert(noOfQuestions == 10, "NoOfQuestions should be 10, was \(noOfQuestions)")
     }
     
+    
+    // MARK: - Evaluate question ... add
+    
     func testEvaluateFirstQuestion() {
         let engine = MLMathMasterEngine()
         engine.newGame(category: .add, type: .sequence, base: [2])
@@ -191,6 +256,124 @@ final class MLMathMasterEngineTests: XCTestCase {
             XCTAssertEqual(result.answer, result.expectedAnswer)
         }
     }
+
+    
+    // MARK: - .... subtract
+    
+    func testEvaluateFirstQuestionSubtract() {
+        let engine = MLMathMasterEngine()
+        engine.newGame(category: .subtract, type: .sequence, base: [2])
+
+        if var question = engine.getQuestion() {
+            let result = engine.evaluateQuestion(question: &question, answer: 2)
+            XCTAssert(result.success == true , "result.success should be true, was \(result.success)")
+            XCTAssertEqual(result.answer, result.expectedAnswer)
+        }
+    }
+    
+    func testEvaluatedQuestionHaveAResultTypeSubtract() {
+        let engine = MLMathMasterEngine()
+        engine.newGame(category: .subtract, type: .sequence, base: [2])
+
+        var question = engine.getQuestion()
+        let _ = engine.evaluateQuestion(question: &question!, answer: 2)
+
+        let index = engine.questions.firstIndex { (q) -> Bool in
+            q.id == question!.id
+        }
+        XCTAssertNotNil(index)
+        XCTAssertNotNil(engine.questions[index!].result)
+    }
+    
+    func testEvaluateAllQuestionsOnAddAndBase2Subtract() {
+        let engine = MLMathMasterEngine()
+        engine.newGame(category: .subtract, type: .sequence, base: [2])
+
+        var iteration = 0
+        while var question = engine.getQuestion() {
+            let answer = 2 - iteration
+            iteration += 1
+            let result = engine.evaluateQuestion(question: &question, answer: answer)
+            XCTAssert(result.success == true , "result.success should be true, was \(result.success)")
+            XCTAssertEqual(result.answer, result.expectedAnswer)
+        }
+    }
+
+    
+    // MARK: - .... multiply
+    
+    func testEvaluateFirstQuestionMultiply() {
+        let engine = MLMathMasterEngine()
+        engine.newGame(category: .multiply, type: .sequence, base: [2])
+
+        if var question = engine.getQuestion() {
+            let result = engine.evaluateQuestion(question: &question, answer: 0)
+            XCTAssert(result.success == true , "result.success should be true, was \(result.success)")
+            XCTAssertEqual(result.answer, result.expectedAnswer)
+        }
+    }
+    
+    func testEvaluatedQuestionHaveAResultTypeMultiply() {
+        let engine = MLMathMasterEngine()
+        engine.newGame(category: .multiply, type: .sequence, base: [2])
+
+        var question = engine.getQuestion()
+        let _ = engine.evaluateQuestion(question: &question!, answer: 0)
+
+        let index = engine.questions.firstIndex { (q) -> Bool in
+            q.id == question!.id
+        }
+        XCTAssertNotNil(index)
+        XCTAssertNotNil(engine.questions[index!].result)
+    }
+    
+    func testEvaluateAllQuestionsOnAddAndBase2Multiply() {
+        let engine = MLMathMasterEngine()
+        engine.newGame(category: .multiply, type: .sequence, base: [2])
+
+        var iteration = 0
+        while var question = engine.getQuestion() {
+            let answer = 2 * iteration
+            iteration += 1
+            let result = engine.evaluateQuestion(question: &question, answer: answer)
+            XCTAssert(result.success == true , "result.success should be true, was \(result.success)")
+            XCTAssertEqual(result.answer, result.expectedAnswer)
+        }
+    }
+
+    
+    // MARK: - Question asString
+    func testQuestionAsStringAdd() {
+        let engine = MLMathMasterEngine()
+        engine.newGame(category: .add, type: .sequence, base: [2])
+
+        let question = engine.getQuestion()!
+            
+        XCTAssertEqual(question.asString(), "2 + 0")
+    }
+
+    
+    func testQuestionAsStringSubtract() {
+        let engine = MLMathMasterEngine()
+        engine.newGame(category: .subtract, type: .sequence, base: [2])
+
+        let question = engine.getQuestion()!
+            
+        XCTAssertEqual(question.asString(), "2 - 0")
+    }
+    
+    func testQuestionAsStringMultiply() {
+        let engine = MLMathMasterEngine()
+        engine.newGame(category: .multiply, type: .sequence, base: [2])
+
+        let question = engine.getQuestion()!
+            
+        XCTAssertEqual(question.asString(), "2 * 0")
+    }
+
+
+    
+    // MARK: - Question state .stopped
     
     func testAllQuestionsAnsweredShouldSetStateToStopped() {
         let engine = MLMathMasterEngine()
@@ -211,6 +394,8 @@ final class MLMathMasterEngineTests: XCTestCase {
 
     }
     
+    
+    // MARK: - New Game -> Reset
     func testAllStateAndPropertiesOnEngineShouldBeResetedWithNewGame() {
         let engine = MLMathMasterEngine()
         engine.newGame(category: .add, type: .sequence, base: [2])
@@ -232,6 +417,8 @@ final class MLMathMasterEngineTests: XCTestCase {
         XCTAssert(engine.noOfRightAnswers == 0)
     }
     
+    
+    // MARK: - Question Stats (answered, unanswered)
     func testGameResultShouldShowOneWronglyAnsweredQuestionOf10() {
         let engine = MLMathMasterEngine()
         engine.newGame(category: .add, type: .sequence, base: [2])
@@ -261,6 +448,9 @@ final class MLMathMasterEngineTests: XCTestCase {
         XCTAssert(engine.answeredQuestions == 2, "answeredQuestions should be 2 was \(engine.answeredQuestions)")
         XCTAssert(engine.noOfRightAnswers == 1, "noOfRightAnswers should be 1, was \(engine.noOfRightAnswers)")
     }
+    
+    
+    // MARK: - Time and active
     
     func testActiveQuestionStartTimeOnQuestion() {
         let engine = MLMathMasterEngine()

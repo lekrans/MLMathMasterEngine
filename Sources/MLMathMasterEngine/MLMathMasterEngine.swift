@@ -147,7 +147,7 @@ public class MLMathMasterEngine {
         return count
     }
     
-    init(settings: MLMathMasterGameSettings? = nil) {
+    public init(settings: MLMathMasterGameSettings? = nil) {
         self.settings = settings ?? MLMathMasterGameSettings()
     }
     

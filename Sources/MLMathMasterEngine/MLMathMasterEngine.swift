@@ -61,10 +61,10 @@ public struct MLMathMasterGameSettings {
 /// Question struct: Holds the information about one question
 public class MLMathMasterQuestion: Identifiable {
     public var id = UUID()
-    var value1: Int
-    var value2: Int
-    var result: MLMathMasterQuestionResult?
-    var active: Bool = false {
+    public var value1: Int
+    public var value2: Int
+    public var result: MLMathMasterQuestionResult?
+    public var active: Bool = false {
         willSet {
             if newValue == true {
                 startTime = .now()
@@ -74,8 +74,8 @@ public class MLMathMasterQuestion: Identifiable {
             }
         }
     }
-    var startTime: DispatchTime?
-    var stopTime: DispatchTime?
+    public var startTime: DispatchTime?
+    public var stopTime: DispatchTime?
     
     
     init(value1: Int, value2: Int) {
@@ -277,6 +277,7 @@ public class MLMathMasterEngine {
         guard questions.count > self.noOfFetchedQuestions else {
             return nil
         }
+        
         let nextIndex = self.noOfFetchedQuestions
         /// get count questions OR if there is not enough get the rest
         let actualCount = min(questions.count - self.noOfFetchedQuestions, count)

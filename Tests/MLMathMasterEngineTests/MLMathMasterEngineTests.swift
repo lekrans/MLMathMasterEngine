@@ -183,28 +183,16 @@ final class MLMathMasterEngineTests: XCTestCase {
     }
 
     func testGetGroupOfQuestionsSpecifiedByCountDefault() {
+        // Should return ALL questions
         let engine = MLMathMasterEngine()
         engine.newGame(category: .add, type: .sequence, base: [2], noOfQuestions: 12)
         
-        var noOfQuestions = 0
-        var noOfIterations = 0
-        var noOfQuestionsLastTime = 0
-        while let questions = engine.getQuestions() {
-            noOfQuestionsLastTime = questions.count
-            noOfIterations += 1
-            print("Batch-----------------")
-            questions.forEach { question in
-                noOfQuestions += 1
-                print("question \(question.value1) + \(question.value2)")
-            }
-        }
-        XCTAssert(noOfQuestions == 12, "NoOfQuestions should be 12 was \(noOfQuestions)")
-        XCTAssert(noOfIterations == 12, "NoOfIterations should be 12 was \(noOfIterations)")
-        XCTAssert(noOfQuestionsLastTime == 1, "NoOfQuestionsLastTime should be 1, was \(noOfQuestionsLastTime)")
+        let questions = engine.getQuestions()!
+        XCTAssert(questions.count == 12, "questions count should be 12, was \(questions.count)")
     }
 
     
-    func testGetSingleQuestions() {
+    func testGetSingleQuestion() {
         let engine = MLMathMasterEngine()
         engine.newGame(category: .add, type: .sequence, base: [2])
 
@@ -464,6 +452,7 @@ final class MLMathMasterEngineTests: XCTestCase {
     }
 
     func testEvaluateActiveQuestionDeactivatesQuestion() {
+        // activating the next question should stop the previous one
         let engine = MLMathMasterEngine()
         engine.newGame(category: .add, type: .sequence, base: [2])
         var question = engine.getQuestion()! // remember that it is valueType
@@ -543,6 +532,95 @@ final class MLMathMasterEngineTests: XCTestCase {
         XCTAssert( timeDifference >= 3, "Time should be 3 sek or more.. was \(timeDifference)")
     }
     
+    func testQuestionTimeTotalWithTotalTimeStopOnGetQuestionBeyondRange() {
+        // stopTime should be set when we call getQuestion last time and get nil back
+        let engine = MLMathMasterEngine()
+        engine.newGame(category: .add, type: .sequence, base: [2])
+
+        let expectation = self.expectation(description: "Answer")
+        
+        Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
+            let q = engine.getQuestion()
+            
+            if let q = q {
+                engine.activate(question: q)
+            } else {
+                timer.invalidate()
+                expectation.fulfill()
+            }
+        }
+        
+        waitForExpectations(timeout: 12, handler: nil)
+        
+        XCTAssert(engine.totalTime > 9, "TotalTime Should be greate than 9 was \(engine.totalTime)")
+    }
+    
+    func testQuestionTotalTimeAfterExplicitStopGame() {
+        let engine = MLMathMasterEngine()
+        engine.newGame(category: .add, type: .sequence, base: [2])
+        
+        let questions = engine.getQuestions()!
+        var nextQuestion = 0
+        
+        let expectation = self.expectation(description: "Answer")
+        
+        Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
+            print("question count \(questions.count)")
+            
+            if nextQuestion < questions.count {
+                engine.activate(question: questions[nextQuestion])
+                nextQuestion += 1
+            } else {
+                engine.stopGame()
+                timer.invalidate()
+                expectation.fulfill()
+            }
+        }
+
+        waitForExpectations(timeout: 12, handler: nil)
+        
+        XCTAssert(engine.totalTime > 9, "TotalTime Should be greate than 9 was \(engine.totalTime)")
+
+    }
+    
+    
+    // MARK: - Game State
+    
+    func testGameStateNoneAtStart() {
+        let engine = MLMathMasterEngine()
+        XCTAssert(engine.status == .none)
+    }
+    
+    func testGameStateInitializedAtNewGame() {
+        let engine = MLMathMasterEngine()
+        engine.newGame(category: .subtract, type: .sequence, base: [2])
+        XCTAssert(engine.status == .initialized)
+    }
+    
+    func testGameStateStartedAfterActivatingFirstQuestion() {
+        let engine = MLMathMasterEngine()
+        engine.newGame(category: .subtract, type: .sequence, base: [2])
+        let q = engine.getQuestion()!
+        engine.activate(question: q)
+        XCTAssert(engine.status == .started)
+    }
+
+    
+    func testGameStateStoppedAfterLastQuestion() {
+        let engine = MLMathMasterEngine()
+        engine.newGame(category: .subtract, type: .sequence, base: [2])
+        
+        
+        for i in 0...10 { // one more than number of questions
+            
+            if let q = engine.getQuestion() {
+                engine.activate(question: q)
+            }
+        }
+                
+        XCTAssert(engine.status == .stopped)
+    }
+
 
 
     static var allTests = [

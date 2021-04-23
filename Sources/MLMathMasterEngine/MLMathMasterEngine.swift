@@ -60,7 +60,7 @@ public struct MLMathMasterGameData {
 // MARK: - GameStatus
 @available(iOS 13.0, *)
 public enum MLMathMasterGameStatus {
-    case none, started, stopped
+    case none, initialized, started, stopped
 }
 
 
@@ -183,6 +183,28 @@ public class MLMathMasterEngine: ObservableObject {
             }
         }
         return count
+    }
+    
+    public var startTime: DispatchTime? {
+        didSet {
+            if startTime != nil {
+                status = .started
+            }
+        }
+    }
+    public var stopTime: DispatchTime? {
+        didSet {
+            if stopTime != nil {
+                status = .stopped
+            }
+        }
+    }
+    
+    public var totalTime: Double {
+        guard startTime != nil, stopTime != nil else {
+            return -1
+        }
+        return Double(stopTime!.rawValue - startTime!.rawValue) / Double(1000000000)
     }
     
     public init(settings: MLMathMasterGameSettings? = nil) {
@@ -315,10 +337,11 @@ public class MLMathMasterEngine: ObservableObject {
         type: MLMathMasterGameType,
         base: [Int],
         noOfQuestions: Int? = nil) {
+       
         self.gameData = MLMathMasterGameData(category: category, type: type, base: base)
         generateNewQuestions(count: noOfQuestions ?? self.settings.noOfQuestions)
         self.noOfFetchedQuestions = 0
-        self.status = .started
+        self.status = .initialized
     }
     
     
@@ -327,7 +350,7 @@ public class MLMathMasterEngine: ObservableObject {
     /// The default value for `count` is one.. meaning that if count is not specified it will return one question
     /// - Parameter count: The maximum numbers of questions we want to get
     /// - Returns: Optional array of questions. Max will be `count`. If there is not enough questions left to satisfy `count` the remaing questions are returned. If there are no more questions to return it will return nil
-    public func getQuestions(by count: Int = 1) -> [MLMathMasterQuestion]? {
+    public func getQuestions(by count: Int) -> [MLMathMasterQuestion]? {
         guard questions.count > self.noOfFetchedQuestions else {
             return nil
         }
@@ -339,13 +362,19 @@ public class MLMathMasterEngine: ObservableObject {
 
         return Array(questions[nextIndex..<nextIndex + actualCount])
     }
-    
+
+    public func getQuestions() -> [MLMathMasterQuestion]? {
+        return self.questions
+    }
+
     
     /// Get a single question. self.noOfFetchedQuestions will be incremented. If there are no more questions this method returns nil
     /// - Returns: One question if there are questions left.. otherwise nil
     public func getQuestion() -> MLMathMasterQuestion? {
         guard questions.count > self.noOfFetchedQuestions else {
+            // we passed the last question and therefore stop the global time
             currentQuestion = nil
+            stopGame()
             return nil
         }
         
@@ -382,6 +411,14 @@ public class MLMathMasterEngine: ObservableObject {
     public func activate(question: MLMathMasterQuestion) {
         currentQuestion = question
         question.active = true
+        
+        if self.startTime == nil {
+            self.startTime = .now()
+        }
+    }
+    
+    public func stopGame() {
+        self.stopTime = .now()
     }
     
     

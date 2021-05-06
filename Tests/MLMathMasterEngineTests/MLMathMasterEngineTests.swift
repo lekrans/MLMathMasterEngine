@@ -19,11 +19,6 @@ final class MLMathMasterEngineTests: XCTestCase {
         XCTAssertTrue(engine.gameData!.category == .add)
     }
     
-    func testStartNewGameShouldHaveStatusStarted() {
-        let engine = MLMathMasterEngine()
-        engine.newGame(category: .add, type: .sequence, base: [1])
-        XCTAssert(engine.status == .started)
-    }
 
     func testStartNewGameOfTypeAddHasRightNumberOfQuestions() {
         let engine = MLMathMasterEngine()
@@ -362,26 +357,8 @@ final class MLMathMasterEngineTests: XCTestCase {
 
 
     
-    // MARK: - Question state .stopped
     
-    func testAllQuestionsAnsweredShouldSetStateToStopped() {
-        let engine = MLMathMasterEngine()
-        engine.newGame(category: .add, type: .sequence, base: [2])
-
-        var iteration = 0
-        let unansweredQuestionsAtBeginning = engine.unansweredQuestions.count
-        
-        while var question = engine.getQuestion() {
-            let answer = iteration + 2
-            iteration += 1
-            let _ = engine.evaluateQuestion(question: &question, answer: answer)
-        }
-        
-        XCTAssert(engine.status == .stopped, "status should be .stopped .. was \(engine.status)")
-        XCTAssert(unansweredQuestionsAtBeginning == 10, "unansweredQuestionsAtBeginning should be 10, was \(unansweredQuestionsAtBeginning)")
-        XCTAssert(engine.unansweredQuestions.count == 0, "unansweredQuestions should be 0, was \(engine.unansweredQuestions.count)")
-
-    }
+    
     
     
     // MARK: - New Game -> Reset
@@ -398,10 +375,9 @@ final class MLMathMasterEngineTests: XCTestCase {
         }
         
         engine.newGame(category: .add, type: .sequence, base: [3])
-        XCTAssert(engine.status == .started)
+        XCTAssert(engine.status == .initialized)
         XCTAssert(engine.questions.count == 10)
         XCTAssert(engine.unansweredQuestions.count == 10)
-        XCTAssert(engine.noOfFetchedQuestions == 0)
         XCTAssert(engine.answeredQuestions == 0)
         XCTAssert(engine.noOfRightAnswers == 0)
     }
@@ -619,6 +595,67 @@ final class MLMathMasterEngineTests: XCTestCase {
         }
                 
         XCTAssert(engine.status == .stopped)
+    }
+    
+    func testAllQuestionsAnsweredShouldSetStateToStopped() {
+        let engine = MLMathMasterEngine()
+        engine.newGame(category: .add, type: .sequence, base: [2])
+
+        var iteration = 0
+        let unansweredQuestionsAtBeginning = engine.unansweredQuestions.count
+        
+        while var question = engine.getQuestion() {
+            let answer = iteration + 2
+            iteration += 1
+            let _ = engine.evaluateQuestion(question: &question, answer: answer)
+        }
+        
+        XCTAssert(engine.status == .stopped, "status should be .stopped .. was \(engine.status)")
+        XCTAssert(unansweredQuestionsAtBeginning == 10, "unansweredQuestionsAtBeginning should be 10, was \(unansweredQuestionsAtBeginning)")
+        XCTAssert(engine.unansweredQuestions.count == 0, "unansweredQuestions should be 0, was \(engine.unansweredQuestions.count)")
+
+    }
+    
+
+    func testSingleQuestionFirstActivatedSetsGameStateToStarted() {
+        let engine = MLMathMasterEngine()
+        engine.newGame(category: .add, type: .sequence, base: [2])
+        let question = engine.getQuestion()
+        XCTAssert(engine.status == .initialized)
+        engine.activate(question: question!)
+        XCTAssert(engine.status == .started, "Should be .started, was \(engine.status)")
+    }
+    
+    func testBatchQuestionFetchActivateFirstSetGameStateToStarted() {
+        let engine = MLMathMasterEngine()
+        engine.newGame(category: .add, type: .sequence, base: [2])
+        let questions = engine.getQuestions(by: 5)
+        XCTAssert(engine.status == .initialized)
+        engine.activate(question: questions![0])
+        XCTAssert(engine.status == .started)
+    }
+    
+    func testFetchAllQuestionFetchActivateFirstSetGameStateToStarted() {
+        let engine = MLMathMasterEngine()
+        engine.newGame(category: .add, type: .sequence, base: [2])
+        let questions = engine.getQuestions()
+        XCTAssert(engine.status == .initialized)
+        engine.activate(question: questions![0])
+        XCTAssert(engine.status == .started)
+    }
+    
+    func testAnswerLastQuestionShouldSetGameStatusToStopped() {
+        let engine = MLMathMasterEngine()
+        engine.newGame(category: .add, type: .sequence, base: [2])
+
+        let questions = engine.getQuestions()
+        XCTAssertTrue(engine.status == .initialized)
+        engine.activate(question: questions![0])
+        XCTAssertTrue(engine.status == .started)
+        var lastQuestion = questions![questions!.count - 1]
+        engine.activate(question: lastQuestion)
+        engine.evaluateQuestion(question: &lastQuestion, answer: 2)
+        XCTAssertTrue(engine.status == .stopped)
     }
 
 

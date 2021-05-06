@@ -83,13 +83,17 @@ public struct MLMathMasterGameSettings {
 // MARK: - Question
 /// Question struct: Holds the information about one question
 @available(iOS 13.0, *)
-public class MLMathMasterQuestion: Identifiable {
+public class MLMathMasterQuestion: Identifiable, Equatable {
+    public static func == (lhs: MLMathMasterQuestion, rhs: MLMathMasterQuestion) -> Bool {
+        lhs.id == rhs.id
+    }
+    
     public var id = UUID()
     public var value1: Int
     public var value2: Int
     public var category: MLMathMasterGameCategory
     public var result: MLMathMasterQuestionResult?
-    public var active: Bool = false {
+    fileprivate(set) var active: Bool = false {
         willSet {
             if newValue == true {
                 startTime = .now()
@@ -136,13 +140,6 @@ public struct MLMathMasterQuestionResult {
 }
 
 
-
-
-
-
-
-
-
 // MARK: - Engine
 /// The MLMathMaster game engine.
 /// The controller of the game.
@@ -151,10 +148,9 @@ public struct MLMathMasterQuestionResult {
 public class MLMathMasterEngine: ObservableObject {
     
     // MARK: - private properties
-    var noOfFetchedQuestions: Int = 0
-    var currentQuestion: MLMathMasterQuestion? {
+    private var noOfFetchedQuestions: Int = 0
+    private var currentQuestion: MLMathMasterQuestion? {
         willSet {
-            print("WILL SET")
             if currentQuestion != nil {
                 currentQuestion!.active = false
                 
@@ -162,6 +158,7 @@ public class MLMathMasterEngine: ObservableObject {
             newValue?.active = false
         }
     }
+    
     // MARK: - public properties
     var gameData: MLMathMasterGameData?
     var settings: MLMathMasterGameSettings
@@ -316,7 +313,9 @@ public class MLMathMasterEngine: ObservableObject {
         }
     }
     
-    
+    func isLast(question: MLMathMasterQuestion) -> Bool {
+        return self.questions[questions.count - 1] == question
+    }
     
 
     
@@ -405,6 +404,9 @@ public class MLMathMasterEngine: ObservableObject {
         addResultToQuestion(question: question, result: result)
         removeQuestionFromRemaining(question: question)
         question.active = false
+        if isLast(question: question) {
+            stopGame()
+        }
         return result
     }
     

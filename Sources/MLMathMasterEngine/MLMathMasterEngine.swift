@@ -252,8 +252,8 @@ public class MLMathMasterEngine: ObservableObject {
     
     var gameData: MLMathMasterGameData?
     var settings: MLMathMasterGameSettings
-    var unansweredQuestions: [MLMathMasterQuestion] = []
-    var gameState: MLMathMasterGameState = .none {
+    @Published var unansweredQuestions: [MLMathMasterQuestion] = []
+    @Published var gameState: MLMathMasterGameState = .none {
         didSet {
             switch gameState {
             case .started:
@@ -261,9 +261,21 @@ public class MLMathMasterEngine: ObservableObject {
             case .stopped:
                 stopTime = .now()
             case .timeAttackStarted:
-                timer = Timer.scheduledTimer(withTimeInterval: self.gameData!.timeAttackTime.asSeconds(), repeats: false, block: { (timer) in
-                    self.gameState = .stopped
-                    NotificationCenter.default.post(name: NSNotification.Name(MLMathMasterEngineNotifications.timeAttackEnd.rawValue), object: nil)
+                currentTime = 0
+                timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true, block: { [weak self] timer in
+                    guard let self = self else { return }
+                    
+                    self.currentTime += 1
+                    
+                    if self.currentTime >
+                        self.gameData!.timeAttackTime.asSeconds() {
+                        
+                        self.gameState = .stopped
+                        
+                        NotificationCenter.default.post(name: NSNotification.Name(MLMathMasterEngineNotifications.timeAttackEnd.rawValue), object: nil)
+                        
+                        timer.invalidate()
+                    }
                 })
             default:
                 return
@@ -289,7 +301,7 @@ public class MLMathMasterEngine: ObservableObject {
     
     public var startTime: DispatchTime?
     public var stopTime: DispatchTime?
-    public var currentTime: Int = 0// seconds
+    @Published public var currentTime: Double = 0 // seconds
     
     public var totalTime: Double {
         guard startTime != nil, stopTime != nil else {

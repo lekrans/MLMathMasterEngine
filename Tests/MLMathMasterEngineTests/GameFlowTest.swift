@@ -265,7 +265,7 @@ final class GameFlowTest: XCTestCase {
                 isActive = isActive || q._active
             }
             XCTAssertFalse(isActive)
-            XCTAssertEqual(engine.questions.count, 5)
+            XCTAssert(engine.questions.count < 7 && engine.questions.count > 4)
             XCTAssertEqual(engine.answeredQuestions, engine.questions.count)
             XCTAssertEqual(engine.noOfRightAnswers, engine.questions.count - 1)
             

@@ -141,7 +141,7 @@ public class MLMathMasterQuestion: Identifiable, Equatable {
     public var value2: Int
     public var category: MLMathMasterGameCategory
     fileprivate(set) var result: MLMathMasterQuestionResult?
-    fileprivate(set) var active: Bool = false {
+    fileprivate(set) var _active: Bool = false {
         willSet {
             if newValue == true {
                 startTime = .now()
@@ -151,6 +151,13 @@ public class MLMathMasterQuestion: Identifiable, Equatable {
             }
         }
     }
+    
+    public var active: Bool {
+        get {
+            return self._active
+        }
+    }
+     
     public var startTime: DispatchTime?
     public var stopTime: DispatchTime?
     
@@ -233,10 +240,10 @@ public class MLMathMasterEngine: ObservableObject {
     private var currentQuestion: MLMathMasterQuestion? {
         willSet {
             if currentQuestion != nil {
-                currentQuestion!.active = false
+                currentQuestion!._active = false
                 
             }
-            newValue?.active = false
+            newValue?._active = false
         }
     }
     
@@ -444,7 +451,7 @@ public class MLMathMasterEngine: ObservableObject {
         }
         
         currentQuestion = question
-        question.active = true
+        question._active = true
         
         if self.gameState != .started,   !self.gameData!.type.isTimeAttack {
             self.gameState = .started
@@ -553,7 +560,7 @@ public class MLMathMasterEngine: ObservableObject {
     ///   - answer: the players answer
     /// - Returns: A MLMathMasterQuestionResult containing the result
     public func evaluateQuestion(question: inout MLMathMasterQuestion, answer: Int) throws -> MLMathMasterQuestionResult? {
-        guard question.active == true else {
+        guard question._active == true else {
             throw MLMathMasterEngineError.evaluateQuestionBeforeItsActivated
         }
         
@@ -563,7 +570,7 @@ public class MLMathMasterEngine: ObservableObject {
             expectedAnswer: correctAnswer)
         addResultToQuestion(question: question, result: result)
         removeQuestionFromRemaining(question: question)
-        question.active = false
+        question._active = false
         
         if !self.gameData!.type.isTimeAttack, isLast(question: question) {
             stopGame()

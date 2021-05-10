@@ -80,7 +80,7 @@ final class GameStateTest: XCTestCase {
     func testTimeAttackGetQuestionShouldNotSetStateToStarted() throws {
         let engine = MLMathMasterEngine()
         engine.newGame(category: .random, max: 100, base: [2,3,4], timeAttackTime: .oneMin)
-        let q = engine.getQuestion()!
+        let _ = engine.getQuestion()!
         XCTAssertNotEqual(engine.gameState, .started)
     }
     

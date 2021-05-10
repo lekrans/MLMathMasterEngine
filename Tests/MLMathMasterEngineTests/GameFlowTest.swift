@@ -78,7 +78,7 @@ final class GameFlowTest: XCTestCase {
             var doesHaveStartAndStopTime = true
             var totalTime: Double = 0
             engine.questions.forEach { (q) in
-                isActive = isActive || q.active
+                isActive = isActive || q._active
                 print("q starttime = \(String(describing: q.startTime)) stopTime: \(String(describing: q.stopTime))")
                 doesHaveStartAndStopTime = doesHaveStartAndStopTime
                     && q.stopTime != nil
@@ -173,7 +173,7 @@ final class GameFlowTest: XCTestCase {
             var doesHaveStartAndStopTime = true
             var totalTime: Double = 0
             engine.questions.forEach { (q) in
-                isActive = isActive || q.active
+                isActive = isActive || q._active
                 print("q starttime = \(String(describing: q.startTime)) stopTime: \(String(describing: q.stopTime))")
                 doesHaveStartAndStopTime = doesHaveStartAndStopTime
                     && q.stopTime != nil
@@ -262,7 +262,7 @@ final class GameFlowTest: XCTestCase {
             XCTAssertTrue(engine.answeredQuestions == engine.questions.count)
             var isActive =  false
             engine.questions.forEach { (q) in
-                isActive = isActive || q.active
+                isActive = isActive || q._active
             }
             XCTAssertFalse(isActive)
             XCTAssertEqual(engine.questions.count, 5)

@@ -36,7 +36,7 @@ final class TimeAttackTest: XCTestCase {
         let q = engine.getQuestion()!
         
         XCTAssertTrue(engine.gameData!.type.isTimeAttack)
-        XCTAssertTrue(q.active)
+        XCTAssertTrue(q._active)
         XCTAssertEqual(engine.gameState, .timeAttackStarted)
     }
     
@@ -47,13 +47,13 @@ final class TimeAttackTest: XCTestCase {
         let timer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { timer in
             do {
                 var q = engine.getQuestion()!
-                try engine.evaluateQuestion(question: &q, answer: 10000)
+                let _ = try engine.evaluateQuestion(question: &q, answer: 10000)
             } catch {
                 print("Error")
             }
         }
         
-        let expectation = self.expectation(forNotification: NSNotification.Name(MLMathMasterEngineNotifications.timeAttackEnd.rawValue), object: nil, handler: { notification in
+        let _ = self.expectation(forNotification: NSNotification.Name(MLMathMasterEngineNotifications.timeAttackEnd.rawValue), object: nil, handler: { notification in
             print("In expectation")
             timer.invalidate()
             return true

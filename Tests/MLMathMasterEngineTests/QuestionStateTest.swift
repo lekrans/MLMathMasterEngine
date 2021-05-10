@@ -14,7 +14,7 @@ class QuestionStateTest: XCTestCase {
         let engine = MLMathMasterEngine()
         engine.newGame(category: .add, type: .sequence, base: [2])
         let q = engine.getQuestion()!
-        XCTAssertTrue(q.active == false)
+        XCTAssertTrue(q._active == false)
         XCTAssertTrue(q.category == .add)
         XCTAssertNil(q.result)
         XCTAssertNil(q.startTime)
@@ -28,7 +28,7 @@ class QuestionStateTest: XCTestCase {
             engine.newGame(category: .add, type: .sequence, base: [2])
             let q = engine.getQuestion()!
             try engine.activate(question: q)
-            XCTAssertTrue(q.active)
+            XCTAssertTrue(q._active)
             XCTAssertNotNil(q.startTime)
             XCTAssertNil(q.stopTime)
         } catch {

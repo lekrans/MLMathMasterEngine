@@ -248,12 +248,12 @@ public class MLMathMasterEngine: ObservableObject {
     }
     
     // MARK: - public properties
-    @Published var questions: [MLMathMasterQuestion] = []
+    @Published public var questions: [MLMathMasterQuestion] = []
     
     var gameData: MLMathMasterGameData?
     var settings: MLMathMasterGameSettings
-    @Published var unansweredQuestions: [MLMathMasterQuestion] = []
-    @Published var gameState: MLMathMasterGameState = .none {
+    @Published public var unansweredQuestions: [MLMathMasterQuestion] = []
+    @Published public var gameState: MLMathMasterGameState = .none {
         didSet {
             switch gameState {
             case .started:

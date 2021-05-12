@@ -16,12 +16,10 @@ final class EvaluateQuestionTest: XCTestCase {
         let engine = MLMathMasterEngine()
         engine.newGame(category: .add, type: .sequence, base: [2])
 
-        if var question = engine.getQuestion() {
-            try engine.activate(question: question)
-            let result = try engine.evaluateQuestion(question: &question, answer: 2)!
+        try engine.qm!.activateNextQuestion()
+        let result = try engine.qm!.evaluateQuestion(answer: 2)!
             XCTAssert(result.success == true , "result.success should be true, was \(result.success)")
             XCTAssertEqual(result.answer, result.expectedAnswer)
-        }
     }
     
     func testEvaluateAllQuestionsOnAddAndBase2() throws {
@@ -29,13 +27,14 @@ final class EvaluateQuestionTest: XCTestCase {
         engine.newGame(category: .add, type: .sequence, base: [2])
 
         var iteration = 0
-        while var question = engine.getQuestion() {
+        try engine.qm!.activateNextQuestion()
+        while let _ = engine.qm!.currentQuestion {
             let answer = iteration + 2
             iteration += 1
-            try engine.activate(question: question)
-            let result = try engine.evaluateQuestion(question: &question, answer: answer)!
+            let result = try engine.qm!.evaluateQuestion(answer: answer)!
             XCTAssert(result.success == true , "result.success should be true, was \(result.success)")
             XCTAssertEqual(result.answer, result.expectedAnswer)
+            try engine.qm!.activateNextQuestion()
         }
     }
     
@@ -44,13 +43,14 @@ final class EvaluateQuestionTest: XCTestCase {
         engine.newGame(category: .add, type: .random(30), base: [2], noOfQuestions: 100)
 
         var maxValue = 0
-        while var question = engine.getQuestion() {
+        try engine.qm!.activateNextQuestion()
+        while let question = engine.qm!.currentQuestion {
             maxValue = max(maxValue, question.value2)
             let answer = question.value1 + question.value2
-            try engine.activate(question: question)
-            let result = try engine.evaluateQuestion(question: &question, answer: answer)!
+            let result = try engine.qm!.evaluateQuestion(answer: answer)!
             XCTAssert(result.success == true , "result.success should be true, was \(result.success)")
             XCTAssertEqual(result.answer, result.expectedAnswer)
+            try engine.qm!.activateNextQuestion()
         }
         XCTAssert(maxValue > 25, "Max should be higher than 25.. probably.. was \(maxValue)")
     }
@@ -60,9 +60,9 @@ final class EvaluateQuestionTest: XCTestCase {
         let engine = MLMathMasterEngine()
         engine.newGame(category: .subtract, type: .sequence, base: [2])
 
-        if var question = engine.getQuestion() {
-            try engine.activate(question: question)
-            let result = try engine.evaluateQuestion(question: &question, answer: 2)!
+        try engine.qm!.activateNextQuestion()
+        if let _ = engine.qm!.currentQuestion {
+            let result = try engine.qm!.evaluateQuestion(answer: 2)!
             XCTAssert(result.success == true , "result.success should be true, was \(result.success)")
             XCTAssertEqual(result.answer, result.expectedAnswer)
         }
@@ -74,13 +74,14 @@ final class EvaluateQuestionTest: XCTestCase {
         engine.newGame(category: .subtract, type: .sequence, base: [2])
 
         var iteration = 0
-        while var question = engine.getQuestion() {
+        try engine.qm!.activateNextQuestion()
+        while var _ = engine.qm!.currentQuestion {
             let answer = 2 - iteration
             iteration += 1
-            try engine.activate(question: question)
-            let result = try engine.evaluateQuestion(question: &question, answer: answer)!
+            let result = try engine.qm!.evaluateQuestion(answer: answer)!
             XCTAssert(result.success == true , "result.success should be true, was \(result.success)")
             XCTAssertEqual(result.answer, result.expectedAnswer)
+            try engine.qm!.activateNextQuestion()
         }
     }
     
@@ -89,13 +90,15 @@ final class EvaluateQuestionTest: XCTestCase {
         engine.newGame(category: .subtract, type: .random(30), base: [2, 4, 6], noOfQuestions: 100)
 
         var maxValue = 0
-        while var question = engine.getQuestion() {
+        try engine.qm!.activateNextQuestion()
+        while let question = engine.qm!.currentQuestion {
             maxValue = max(maxValue, question.value2)
             let answer = question.value1 - question.value2
-            try engine.activate(question: question)
-            let result = try engine.evaluateQuestion(question: &question, answer: answer)!
+            let result = try engine.qm!.evaluateQuestion(answer: answer)!
             XCTAssert(result.success == true , "result.success should be true, was \(result.success)")
             XCTAssertEqual(result.answer, result.expectedAnswer)
+            try engine.qm!.activateNextQuestion()
+
         }
         XCTAssert(maxValue > 25, "Max should be higher than 25.. probably.. was \(maxValue)")
     }
@@ -105,10 +108,10 @@ final class EvaluateQuestionTest: XCTestCase {
         do {
         let engine = MLMathMasterEngine()
         engine.newGame(category: .multiply, type: .sequence, base: [2, 4, 6])
-
-        if var question = engine.getQuestion() {
-            try engine.activate(question: question)
-            let result = try engine.evaluateQuestion(question: &question, answer: 0)!
+            
+        try engine.qm!.activateNextQuestion()
+            if let _ = engine.qm!.currentQuestion {
+                let result = try engine.qm!.evaluateQuestion(answer: 0)!
             XCTAssert(result.success == true , "result.success should be true, was \(result.success)")
             XCTAssertEqual(result.answer, result.expectedAnswer)
         }
@@ -123,13 +126,16 @@ final class EvaluateQuestionTest: XCTestCase {
         engine.newGame(category: .multiply, type: .sequence, base: [2])
 
         var iteration = 0
-        while var question = engine.getQuestion() {
+        
+        try engine.qm!.activateNextQuestion()
+            while let _ = engine.qm!.currentQuestion {
             let answer = 2 * iteration
             iteration += 1
-            try engine.activate(question: question)
-            let result = try engine.evaluateQuestion(question: &question, answer: answer)!
+            let result = try engine.qm!.evaluateQuestion(answer: answer)!
             XCTAssert(result.success == true , "result.success should be true, was \(result.success)")
             XCTAssertEqual(result.answer, result.expectedAnswer)
+            try engine.qm!.activateNextQuestion()
+
         }
         } catch {
             XCTFail()
@@ -142,13 +148,14 @@ final class EvaluateQuestionTest: XCTestCase {
         engine.newGame(category: .multiply, type: .random(30), base: [2, 4, 6], noOfQuestions: 100)
 
         var maxValue = 0
-        while var question = engine.getQuestion() {
+        try engine.qm!.activateNextQuestion()
+        while let question = engine.qm!.currentQuestion {
             maxValue = max(maxValue, question.value2)
             let answer = question.value1 * question.value2
-            try engine.activate(question: question)
-            let result = try engine.evaluateQuestion(question: &question, answer: answer)!
+            let result = try engine.qm!.evaluateQuestion(answer: answer)!
             XCTAssert(result.success == true , "result.success should be true, was \(result.success)")
             XCTAssertEqual(result.answer, result.expectedAnswer)
+            try engine.qm!.activateNextQuestion()
         }
         XCTAssert(maxValue > 25, "Max should be higher than 25.. probably.. was \(maxValue)")
         } catch {
@@ -161,8 +168,10 @@ final class EvaluateQuestionTest: XCTestCase {
         do {
         let engine = MLMathMasterEngine()
         engine.newGame(category: .random, type: .sequence, base: [2, 4, 6])
+            
+        try engine.qm!.activateNextQuestion()
 
-        if var question = engine.getQuestion() {
+        if let question = engine.qm!.currentQuestion {
             print(question.asString())
             var answer: Int {
                 switch question.category {
@@ -175,8 +184,7 @@ final class EvaluateQuestionTest: XCTestCase {
                 default:  return -1
                 }
             }
-            try engine.activate(question: question)
-            let result = try engine.evaluateQuestion(question: &question, answer: answer)!
+            let result = try engine.qm!.evaluateQuestion(answer: answer)!
             XCTAssert(result.success == true , "result.success should be true, was \(result.success)")
             XCTAssertEqual(result.answer, result.expectedAnswer)
         }
@@ -190,8 +198,8 @@ final class EvaluateQuestionTest: XCTestCase {
         let engine = MLMathMasterEngine()
         engine.newGame(category: .random, type: .sequence, base: [2])
 
-
-        while var question = engine.getQuestion() {
+        try engine.qm!.activateNextQuestion()
+        while let question = engine.qm!.currentQuestion {
             print(question.asString())
             var answer: Int {
                 switch question.category {
@@ -205,10 +213,11 @@ final class EvaluateQuestionTest: XCTestCase {
                 }
             }
             
-            try engine.activate(question: question)
-            let result = try engine.evaluateQuestion(question: &question, answer: answer)!
+            let result = try engine.qm!.evaluateQuestion(answer: answer)!
             XCTAssert(result.success == true , "result.success should be true, was \(result.success)")
             XCTAssertEqual(result.answer, result.expectedAnswer)
+            try engine.qm!.activateNextQuestion()
+
         }
         } catch {
             XCTFail()
@@ -221,7 +230,9 @@ final class EvaluateQuestionTest: XCTestCase {
         engine.newGame(category: .random, type: .random(30), base: [2, 4, 6], noOfQuestions: 100)
 
         var maxValue = 0
-        while var question = engine.getQuestion() {
+        
+        try engine.qm!.activateNextQuestion()
+        while let question = engine.qm!.currentQuestion {
             maxValue = max(maxValue, question.value2)
             print(question.asString())
             var answer: Int {
@@ -236,10 +247,10 @@ final class EvaluateQuestionTest: XCTestCase {
                 }
             }
             
-            try engine.activate(question: question)
-            let result = try engine.evaluateQuestion(question: &question, answer: answer)!
+            let result = try engine.qm!.evaluateQuestion(answer: answer)!
             XCTAssert(result.success == true , "result.success should be true, was \(result.success)")
             XCTAssertEqual(result.answer, result.expectedAnswer)
+            try engine.qm!.activateNextQuestion()
         }
         XCTAssert(maxValue > 25, "Max should be higher than 25.. probably.. was \(maxValue)")
         } catch {

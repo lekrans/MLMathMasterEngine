@@ -1,6 +1,6 @@
 //
 //  File.swift
-//  
+//
 //
 //  Created by Michael Lekrans on 2021-05-08.
 //
@@ -19,15 +19,12 @@ final class QuestionsGeneratedTest: XCTestCase {
         let engine = MLMathMasterEngine()
         engine.newGame(category: .add, type: .sequence, base: [2])
 
-        var question = engine.getQuestion()!
-        try engine.activate(question: question)
-        let _ = try engine.evaluateQuestion(question: &question, answer: 2)
+            
+        try engine.qm!.activateNextQuestion()
+        let _ = try engine.qm!.evaluateQuestion(answer: 2)
 
-        let index = engine.questions.firstIndex { (q) -> Bool in
-            q.id == question.id
-        }
-        XCTAssertNotNil(index)
-        XCTAssertNotNil(engine.questions[index!].result)
+
+        XCTAssertNotNil(engine.qm!.answeredQuestions.first!.result)
         } catch {
             XCTFail()
         }
@@ -35,34 +32,47 @@ final class QuestionsGeneratedTest: XCTestCase {
 
     
     // MARK: - Have 2 values
-    func testQuestionsHaveTwoValues() {
+    func testQuestionsHaveTwoValues() throws {
         let engine = MLMathMasterEngine()
         engine.newGame(category: .add, type: .sequence, base: [1])
-        XCTAssertNotNil(engine.questions[0].value1)
-        XCTAssertNotNil(engine.questions[0].value2)
+        try engine.qm!.activateNextQuestion()
+        let question = engine.qm!.currentQuestion!
+
+        
+        XCTAssertNotNil(question.value1)
+        XCTAssertNotNil(question.value2)
     }
     
     // MARK: - Sequence
-    func testQuestionGeneratedFromSequenceWithOneAsBase() {
+    func testQuestionGeneratedFromSequenceWithOneAsBase() throws {
         let engine = MLMathMasterEngine()
         engine.newGame(category: .add, type: .sequence, base: [1])
         for i in 0...9 {
+            try engine.qm!.activateNextQuestion()
+            let _ = try engine.qm!.evaluateQuestion(answer: 3)
+            let question = engine.qm!.currentQuestion!
+
             print("testing \(i)")
-            XCTAssertTrue(engine.questions[i].value1 == 1 && engine.questions[i].value2 == i, "value1 should be 2 (was \(String(describing: engine.questions[i].value1)), value2 should be \(i) (was \(String(describing: engine.questions[i].value2)))")
+            XCTAssertTrue(question.value1 == 1 && question.value2 == i, "value1 should be 2 (was \(String(describing: question.value1)), value2 should be \(i) (was \(String(describing: question.value2)))")
         }
     }
 
-    func testQuestionGeneratedFromSequenceWithTwoAsBase() {
+    func testQuestionGeneratedFromSequenceWithTwoAsBase() throws {
         let engine = MLMathMasterEngine()
         engine.newGame(category: .add, type: .sequence, base: [2])
         
         for i in 0...9 {
+            try engine.qm!.activateNextQuestion()
+            let _ = try engine.qm!.evaluateQuestion(answer: 3)
+
+            let question = engine.qm!.currentQuestion!
+
             print("testing \(i)")
-            XCTAssertTrue(engine.questions[i].value1 == 2 && engine.questions[i].value2 == i, "value1 should be 2 (was \(String(describing: engine.questions[i].value1)), value2 should be \(i) (was \(String(describing: engine.questions[i].value2)))")
+            XCTAssertTrue(question.value1 == 2 && question.value2 == i, "value1 should be 2 (was \(String(describing: question.value1)), value2 should be \(i) (was \(String(describing: question.value2)))")
         }
     }
 
-    func testQuestionGeneratedFromSequenceWithOneAndFourAndSixAsBase() {
+    func testQuestionGeneratedFromSequenceWithOneAndFourAndSixAsBase() throws {
         let engine = MLMathMasterEngine()
         engine.newGame(category: .add, type: .sequence, base: [1, 4, 6], noOfQuestions: 100)
 
@@ -73,7 +83,11 @@ final class QuestionsGeneratedTest: XCTestCase {
 
         for i in 0...99 {
             print("testing \(i)")
-            let question = engine.questions[i]
+            try engine.qm!.activateNextQuestion()
+            let _ = try engine.qm!.evaluateQuestion(answer: 3)
+
+            let question = engine.qm!.currentQuestion!
+
             let value1 = question.value1
             let value2 = question.value2
             
@@ -88,7 +102,7 @@ final class QuestionsGeneratedTest: XCTestCase {
                 otherNumberFound = true
             }
 
-            XCTAssertTrue(value1 == 1 || value1 == 4 || value1 == 6  && engine.questions[i].value2 == i, "value1 should be 1, 4 or 6 (was \(String(value1)), value2 should be \(i) (was \(String(describing: value2)))")
+            XCTAssertTrue(value1 == 1 || value1 == 4 || value1 == 6  && question.value2 == i, "value1 should be 1, 4 or 6 (was \(String(value1)), value2 should be \(i) (was \(String(describing: value2)))")
         }
         XCTAssertFalse(otherNumberFound, "otherNumbersFound should be false.. was true")
         XCTAssert(noOfOnes > 0, "NoOfOnes should be greater than 0.. was \(noOfOnes)")
@@ -100,33 +114,43 @@ final class QuestionsGeneratedTest: XCTestCase {
     // MARK: - Random
     // With enum Random default .. should be max 10
     
-    func testQuestionGeneratedFromRandomWithOneAsBase() {
+    func testQuestionGeneratedFromRandomWithOneAsBase() throws{
         let engine = MLMathMasterEngine()
         engine.newGame(category: .add, type: .random(), base: [1])
         var answerArray: [Int] = Array(repeating: 0, count: 10)
         for i in 0...9 {
-            let value2 = engine.questions[i].value2
+            try engine.qm!.activateNextQuestion()
+            let _ = try engine.qm!.evaluateQuestion(answer: 3)
+
+            let question = engine.qm!.currentQuestion!
+
+            let value2 = question.value2
             answerArray[value2 - 1] += 1
             print("testing \(i)")
             print("value2: \(value2)")
-            XCTAssertTrue(engine.questions[i].value1 == 1 && engine.questions[i].value2 <= 10, "value1 should be 1 (was \(String(describing: engine.questions[i].value1)), value2 should be <= 10 (was \(String(describing: engine.questions[i].value2)))")
+            XCTAssertTrue(question.value1 == 1 && question.value2 <= 10, "value1 should be 1 (was \(String(describing: question.value1)), value2 should be <= 10 (was \(String(describing: question.value2)))")
         }
         XCTAssertTrue(answerArray.contains(where: { $0 > 1 }))
     }
 
-    func testQuestionGeneratedFromRandomWithTwoAsBase() {
+    func testQuestionGeneratedFromRandomWithTwoAsBase() throws{
         let engine = MLMathMasterEngine()
         engine.newGame(category: .add, type: .random(), base: [2])
         var answerArray: [Int] = Array(repeating: 0, count: 10)
-        for i in 0...9 {
-            let value2 = engine.questions[i].value2
+        for _ in 0...9 {
+            try engine.qm!.activateNextQuestion()
+            let _ = try engine.qm!.evaluateQuestion(answer: 3)
+
+            let question = engine.qm!.currentQuestion!
+
+            let value2 = question.value2
             answerArray[value2 - 1] += 1
-            XCTAssertTrue(engine.questions[i].value1 == 2 && engine.questions[i].value2 <= 10, "value1 should be 2 (was \(String(describing: engine.questions[i].value1)), value2 should <= 10 (was \(String(describing: engine.questions[i].value2)))")
+            XCTAssertTrue(question.value1 == 2 && question.value2 <= 10, "value1 should be 2 (was \(String(describing: question.value1)), value2 should <= 10 (was \(String(describing: question.value2)))")
         }
         XCTAssertTrue(answerArray.contains(where: { $0 > 1 }))
     }
 
-    func testQuestionGeneratedFromRandomWithOneAndFourAndSixAsBase() {
+    func testQuestionGeneratedFromRandomWithOneAndFourAndSixAsBase() throws {
         let engine = MLMathMasterEngine()
         engine.newGame(category: .add, type: .random(), base: [1, 4, 6], noOfQuestions: 100)
 
@@ -135,10 +159,14 @@ final class QuestionsGeneratedTest: XCTestCase {
         var noOfSixs: Int = 0
         var otherNumberFound = false
         var answerArray: [Int] = Array(repeating: 0, count: 10)
-        for i in 0...99 {
-            let value2 = engine.questions[i].value2
+        for _ in 0...99 {
+            try engine.qm!.activateNextQuestion()
+            let _ = try engine.qm!.evaluateQuestion(answer: 3)
+
+            let question = engine.qm!.currentQuestion!
+
+            let value2 = question.value2
             answerArray[value2 - 1] += 1
-            let question = engine.questions[i]
             let value1 = question.value1
             
             switch value1 {
@@ -152,7 +180,7 @@ final class QuestionsGeneratedTest: XCTestCase {
                 otherNumberFound = true
             }
 
-            XCTAssertTrue(value1 == 1 || value1 == 4 || value1 == 6  && engine.questions[i].value2 <= 10, "value1 should be 1, 4 or 6 (was \(String(value1)), value2 should be <=  10 (was \(String(describing: value2)))")
+            XCTAssertTrue(value1 == 1 || value1 == 4 || value1 == 6  && question.value2 <= 10, "value1 should be 1, 4 or 6 (was \(String(value1)), value2 should be <=  10 (was \(String(describing: value2)))")
         }
         XCTAssertFalse(otherNumberFound, "otherNumbersFound should be false.. was true")
         XCTAssert(noOfOnes > 0, "NoOfOnes should be greater than 0.. was \(noOfOnes)")
@@ -162,35 +190,45 @@ final class QuestionsGeneratedTest: XCTestCase {
     
     // With random(max: specified
     
-    func testQuestionGeneratedFromRandomWithOneAsBaseAndRangeLargeThan10() {
+    func testQuestionGeneratedFromRandomWithOneAsBaseAndRangeLargeThan10() throws{
         let engine = MLMathMasterEngine()
         engine.newGame(category: .add, type: .random(20), base: [1])
         var answerArray: [Int] = Array(repeating: 0, count: 20)
         var largerThan10 = false
-        for i in 0...9 {
-            let value2 = engine.questions[i].value2
+        for _ in 0...9 {
+            try engine.qm!.activateNextQuestion()
+            let _ = try engine.qm!.evaluateQuestion(answer: 3)
+
+            let question = engine.qm!.currentQuestion!
+
+            let value2 = question.value2
             largerThan10 = largerThan10 || value2 > 10
             answerArray[value2 - 1] += 1
-            XCTAssertTrue(engine.questions[i].value1 == 1 && engine.questions[i].value2 <= 20, "value1 should be 1 (was \(String(describing: engine.questions[i].value1)), value2 should be <= 10 (was \(String(describing: engine.questions[i].value2)))")
+            XCTAssertTrue(question.value1 == 1 && question.value2 <= 20, "value1 should be 1 (was \(String(describing: question.value1)), value2 should be <= 10 (was \(String(describing: question.value2)))")
         }
         XCTAssertTrue(largerThan10)
     }
 
-    func testQuestionGeneratedFromRandomWithTwoAsBaseAndRangeLargerThan10() {
+    func testQuestionGeneratedFromRandomWithTwoAsBaseAndRangeLargerThan10() throws {
         let engine = MLMathMasterEngine()
         engine.newGame(category: .add, type: .random(20), base: [2])
         var answerArray: [Int] = Array(repeating: 0, count: 20)
         var largerThan10 = false
-        for i in 0...9 {
-            let value2 = engine.questions[i].value2
+        for _ in 0...9 {
+            try engine.qm!.activateNextQuestion()
+            let _ = try engine.qm!.evaluateQuestion(answer: 3)
+
+            let question = engine.qm!.currentQuestion!
+
+            let value2 = question.value2
             largerThan10 = largerThan10 || value2 > 10
             answerArray[value2 - 1] += 1
-            XCTAssertTrue(engine.questions[i].value1 == 2 && engine.questions[i].value2 <= 20, "value1 should be 2 (was \(String(describing: engine.questions[i].value1)), value2 should <= 10 (was \(String(describing: engine.questions[i].value2)))")
+            XCTAssertTrue(question.value1 == 2 && question.value2 <= 20, "value1 should be 2 (was \(String(describing: question.value1)), value2 should <= 10 (was \(String(describing: question.value2)))")
         }
         XCTAssertTrue(largerThan10)
     }
 
-    func testQuestionGeneratedFromRandomWithOneAndFourAndSixAsBaseAndRangeLargerThan10() {
+    func testQuestionGeneratedFromRandomWithOneAndFourAndSixAsBaseAndRangeLargerThan10() throws {
         var largerThan10 = false
         let engine = MLMathMasterEngine()
         engine.newGame(category: .add, type: .random(20), base: [1, 4, 6], noOfQuestions: 100)
@@ -200,11 +238,16 @@ final class QuestionsGeneratedTest: XCTestCase {
         var noOfSixs: Int = 0
         var otherNumberFound = false
         var answerArray: [Int] = Array(repeating: 0, count: 20)
-        for i in 0...99 {
-            let value2 = engine.questions[i].value2
+        for _ in 0...99 {
+            
+            try engine.qm!.activateNextQuestion()
+            let _ = try engine.qm!.evaluateQuestion(answer: 3)
+
+            let question = engine.qm!.currentQuestion!
+
+            let value2 = question.value2
             largerThan10 = largerThan10 || value2 > 10
             answerArray[value2 - 1] += 1
-            let question = engine.questions[i]
             let value1 = question.value1
             
             switch value1 {
@@ -218,7 +261,7 @@ final class QuestionsGeneratedTest: XCTestCase {
                 otherNumberFound = true
             }
 
-            XCTAssertTrue(value1 == 1 || value1 == 4 || value1 == 6  && engine.questions[i].value2 <= 20, "value1 should be 1, 4 or 6 (was \(String(value1)), value2 should be <=  10 (was \(String(describing: value2)))")
+            XCTAssertTrue(value1 == 1 || value1 == 4 || value1 == 6  && question.value2 <= 20, "value1 should be 1, 4 or 6 (was \(String(value1)), value2 should be <=  10 (was \(String(describing: value2)))")
         }
         XCTAssertFalse(otherNumberFound, "otherNumbersFound should be false.. was true")
         XCTAssert(noOfOnes > 0, "NoOfOnes should be greater than 0.. was \(noOfOnes)")
@@ -228,29 +271,33 @@ final class QuestionsGeneratedTest: XCTestCase {
     }
     
     // MARK: - Question asString
-    func testQuestionAsStringAdd() {
+    func testQuestionAsStringAdd() throws {
         let engine = MLMathMasterEngine()
         engine.newGame(category: .add, type: .sequence, base: [2])
+        try engine.qm!.activateNextQuestion()
+        let question = engine.qm!.currentQuestion!
 
-        let question = engine.getQuestion()!
             
         XCTAssertEqual(question.asString(), "2 + 0")
     }
 
-    func testQuestionAsStringSubtract() {
+    func testQuestionAsStringSubtract() throws {
         let engine = MLMathMasterEngine()
         engine.newGame(category: .subtract, type: .sequence, base: [2])
 
-        let question = engine.getQuestion()!
-            
+        try engine.qm!.activateNextQuestion()
+        let question = engine.qm!.currentQuestion!
+
         XCTAssertEqual(question.asString(), "2 - 0")
     }
     
-    func testQuestionAsStringMultiply() {
+    func testQuestionAsStringMultiply() throws {
         let engine = MLMathMasterEngine()
         engine.newGame(category: .multiply, type: .sequence, base: [2])
 
-        let question = engine.getQuestion()!
+        try engine.qm!.activateNextQuestion()
+        let question = engine.qm!.currentQuestion!
+
             
         XCTAssertEqual(question.asString(), "2 * 0")
     }

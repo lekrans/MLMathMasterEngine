@@ -1,6 +1,6 @@
 //
 //  File.swift
-//  
+//
 //
 //  Created by Michael Lekrans on 2021-05-09.
 //
@@ -28,11 +28,11 @@ final class GameStateTest: XCTestCase {
     // MARK: - STATE = STARTED
     func testGameStateStartedAfterActivatingFirstQuestion() {
         do {
-        let engine = MLMathMasterEngine()
-        engine.newGame(category: .subtract, type: .sequence, base: [2])
-        let q = engine.getQuestion()!
-        try engine.activate(question: q)
-        XCTAssert(engine.gameState == .started)
+            let engine = MLMathMasterEngine()
+            engine.newGame(category: .subtract, type: .sequence, base: [2])
+            
+            try engine.qm!.activateNextQuestion()
+            XCTAssert(engine.gameState == .started)
         } catch {
             XCTFail()
         }
@@ -40,12 +40,12 @@ final class GameStateTest: XCTestCase {
     
     func testSingleQuestionFirstActivatedSetsGameStateToStarted() {
         do {
-        let engine = MLMathMasterEngine()
-        engine.newGame(category: .add, type: .sequence, base: [2])
-        let question = engine.getQuestion()
-        XCTAssert(engine.gameState == .initialized)
-        try engine.activate(question: question!)
-        XCTAssert(engine.gameState == .started, "Should be .started, was \(engine.gameState)")
+            let engine = MLMathMasterEngine()
+            engine.newGame(category: .add, type: .sequence, base: [2])
+            XCTAssert(engine.gameState == .initialized)
+            try engine.qm!.activateNextQuestion()
+            
+            XCTAssert(engine.gameState == .started, "Should be .started, was \(engine.gameState)")
         } catch {
             XCTFail()
         }
@@ -53,12 +53,11 @@ final class GameStateTest: XCTestCase {
     
     func testBatchQuestionFetchActivateFirstSetGameStateToStarted() throws {
         do {
-        let engine = MLMathMasterEngine()
-        engine.newGame(category: .add, type: .sequence, base: [2])
-        let questions = try engine.getQuestions(by: 5)
-        XCTAssert(engine.gameState == .initialized)
-        try engine.activate(question: questions![0])
-        XCTAssert(engine.gameState == .started)
+            let engine = MLMathMasterEngine()
+            engine.newGame(category: .add, type: .sequence, base: [2], groupSize: 5)
+            XCTAssert(engine.gameState == .initialized)
+            try engine.qm!.activateNextQuestion()
+            XCTAssert(engine.gameState == .started)
         } catch {
             XCTFail()
         }
@@ -67,36 +66,27 @@ final class GameStateTest: XCTestCase {
     func testFetchAllQuestionFetchActivateFirstSetGameStateToStarted() throws {
         do {
             let engine = MLMathMasterEngine()
-            engine.newGame(category: .add, type: .sequence, base: [2])
-            let questions = try engine.getQuestions()
+            engine.newGame(category: .add, type: .sequence, base: [2], groupSize: -1)
             XCTAssert(engine.gameState == .initialized)
-            try engine.activate(question: questions![0])
+            try engine.qm!.activateNextQuestion()
             XCTAssert(engine.gameState == .started)
         } catch {
             XCTFail()
         }
     }
     
-    func testTimeAttackGetQuestionShouldNotSetStateToStarted() throws {
-        let engine = MLMathMasterEngine()
-        engine.newGame(category: .random, max: 100, base: [2,3,4], timeAttackTime: .oneMin)
-        let _ = engine.getQuestion()!
-        XCTAssertNotEqual(engine.gameState, .started)
-    }
     
     
     // MARK: - STATE = STOPPED
-    func testGameStateStoppedAfterLastQuestion() {
+    func testGameStateStoppedAfterLastQuestion() throws {
         let engine = MLMathMasterEngine()
         engine.newGame(category: .subtract, type: .sequence, base: [2])
         
-        
         for _ in 0...10 { // one more than number of questions
-            
-            if var q = engine.getQuestion() {
+            try engine.qm!.activateNextQuestion()
+            if let _ = engine.qm!.currentQuestion {
                 do {
-                    try engine.activate(question: q)
-                    let _ = try engine.evaluateQuestion(question: &q, answer: 4)
+                    let _ = try engine.qm!.evaluateQuestion(answer: 4)
                 } catch {
                     XCTFail()
                 }
@@ -108,22 +98,23 @@ final class GameStateTest: XCTestCase {
     
     func testAllQuestionsAnsweredShouldSetStateToStopped() {
         do {
-        let engine = MLMathMasterEngine()
-        engine.newGame(category: .add, type: .sequence, base: [2])
-        
-        var iteration = 0
-        let unansweredQuestionsAtBeginning = engine.unansweredQuestions.count
-        
-        while var question = engine.getQuestion() {
-            let answer = iteration + 2
-            iteration += 1
-            try engine.activate(question: question)
-            let _ = try engine.evaluateQuestion(question: &question, answer: answer)
-        }
-        
-        XCTAssert(engine.gameState == .stopped, "status should be .stopped .. was \(engine.gameState)")
-        XCTAssert(unansweredQuestionsAtBeginning == 10, "unansweredQuestionsAtBeginning should be 10, was \(unansweredQuestionsAtBeginning)")
-        XCTAssert(engine.unansweredQuestions.count == 0, "unansweredQuestions should be 0, was \(engine.unansweredQuestions.count)")
+            let engine = MLMathMasterEngine()
+            engine.newGame(category: .add, type: .sequence, base: [2])
+            
+            var iteration = 0
+            let unansweredQuestionsAtBeginning = engine.qm!.unansweredQuestions
+            
+            try engine.qm!.activateNextQuestion()
+            while let _ = engine.qm!.currentQuestion {
+                let answer = iteration + 2
+                iteration += 1
+                let _ = try engine.qm!.evaluateQuestion(answer: answer)
+                try engine.qm!.activateNextQuestion()
+            }
+            
+            XCTAssert(engine.gameState == .stopped, "status should be .stopped .. was \(engine.gameState)")
+            XCTAssert(unansweredQuestionsAtBeginning == 10, "unansweredQuestionsAtBeginning should be 10, was \(unansweredQuestionsAtBeginning)")
+            XCTAssert(engine.qm!.unansweredQuestions == 0, "unansweredQuestions should be 0, was \(engine.qm!.unansweredQuestions)")
         } catch {
             XCTFail()
         }
@@ -135,26 +126,22 @@ final class GameStateTest: XCTestCase {
         engine.newGame(category: .add, type: .sequence, base: [2])
         
         do {
-            var questions = try engine.getQuestions()
-            XCTAssertTrue(engine.gameState == .initialized)
-            try engine.activate(question: questions![0])
-            let _ = try engine.evaluateQuestion(question: &questions![0], answer: 5)
-            XCTAssertTrue(engine.gameState == .started)
-            var lastQuestion = questions![questions!.count - 1]
-            try engine.activate(question: lastQuestion)
-            let _ = try engine.evaluateQuestion(question: &lastQuestion, answer: 2)
+            while engine.gameState != .stopped {
+                try engine.qm!.activateNextQuestion()
+                try engine.qm!.evaluateQuestion(answer: 3)
+            }
             XCTAssertTrue(engine.gameState == .stopped)
         } catch {
             XCTFail()
         }
     }
-
+    
     // MARK: - STATE = TIMEATTACKSTARTED
-//    func testGetFirstQuestionInTimeAttackSetStateToTimeAttackStarted() {
-//        let engine = MLMathMasterEngine()
-//        engine.newGame(category: .random, max: 100, base: [2,3,4], timeAttackTime: .test10Sek)
-//        let q = engine.getQuestion()
-//    }
-
+    //    func testGetFirstQuestionInTimeAttackSetStateToTimeAttackStarted() {
+    //        let engine = MLMathMasterEngine()
+    //        engine.newGame(category: .random, max: 100, base: [2,3,4], timeAttackTime: .test10Sek)
+    //        let q = engine.getQuestion()
+    //    }
+    
 }
 

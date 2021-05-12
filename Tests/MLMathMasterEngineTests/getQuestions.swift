@@ -1,6 +1,6 @@
 //
 //  File.swift
-//  
+//
 //
 //  Created by Michael Lekrans on 2021-05-08.
 //
@@ -15,13 +15,16 @@ final class GetQuestions: XCTestCase {
     
     // DEFAULT ... should be 10
     // Singles
-    func testGetSingleQuestion() {
+    func testGetSingleQuestion() throws {
         let engine = MLMathMasterEngine()
         engine.newGame(category: .add, type: .sequence, base: [2])
 
         var noOfQuestions = 0
-        while let _ = engine.getQuestion() {
+        try engine.qm!.activateNextQuestion()
+        while let _ = engine.qm!.currentQuestion {
             noOfQuestions += 1
+            let _ = try engine.qm!.evaluateQuestion(answer: 3)
+            try engine.qm!.activateNextQuestion()
         }
         
         XCTAssert(noOfQuestions == engine.settings.noOfQuestions, "NoOfQuestions should be \(engine.settings.noOfQuestions), was \(noOfQuestions)")
@@ -30,26 +33,46 @@ final class GetQuestions: XCTestCase {
     // Group of 5
     func testGetGroupOfQuestionsSpecifiedByCount5() throws {
         let engine = MLMathMasterEngine()
-        engine.newGame(category: .add, type: .sequence, base: [2])
-        
-        var noOfQuestions = 0
-        var noOfIterations = 0
-        var noOfQuestionsLastTime = 0
-        while let questions = try engine.getQuestions(by: 5) {
-            noOfQuestionsLastTime = questions.count == 5 ? 0 : questions.count
-            noOfIterations += 1
-            questions.forEach { _ in
-                noOfQuestions += 1
-            }
+        engine.newGame(
+            category: .add,
+            type: .sequence,
+            base: [2],
+            noOfQuestions: 12,
+            groupSize: 5)
+                
+        // Activate the first 5 questions
+        try engine.qm!.activateNextQuestion() // this should fetch 5 questions
+        var firstQuestion = engine.qm!.currentQuestions.first!
+        print("firstQuestions id when fetched \(firstQuestion.id)")
+        print("firstQuestion value = \(firstQuestion.asString())")
+        XCTAssertEqual(engine.qm!.currentQuestions.count, 5)
+        let _ = try engine.qm!.evaluateQuestion(answer: 3)
+        print("evaluating question")
+        try (1...4).forEach { i in
+            try engine.qm!.activateNextQuestion()
+            let _ = try engine.qm!.evaluateQuestion(answer: 3)
+            print("evaluating question")
+            XCTAssertEqual(firstQuestion, engine.qm!.currentQuestions.first!)
         }
-        XCTAssert(noOfQuestions == engine.settings.noOfQuestions, "NoOfQuestions should be \(engine.settings.noOfQuestions) was \(noOfQuestions)")
-        
-        var expectedIterations = engine.settings.noOfQuestions / 5
-        if engine.settings.noOfQuestions % 5 > 0 {
-            expectedIterations += 1
+        // Activate next set of 5 questions
+        try engine.qm!.activateNextQuestion()
+        print("engine first question value\(engine.qm!.currentQuestions.first!.asString()) firstQuestionstring \(firstQuestion.asString())")
+        print("engine first question \(engine.qm!.currentQuestions.first!.id) firstQuestionId \(firstQuestion.id)")
+        XCTAssertNotEqual(engine.qm!.currentQuestions.first!, firstQuestion)
+        firstQuestion = engine.qm!.currentQuestions.first!
+        XCTAssertEqual(engine.qm!.currentQuestions.count, 5)
+        let _ = try engine.qm!.evaluateQuestion(answer: 3)
+        try (1...4).forEach { i in
+            try engine.qm!.activateNextQuestion()
+            let _ = try engine.qm!.evaluateQuestion(answer: 3)
+            XCTAssertEqual(engine.qm!.currentQuestions.first!, firstQuestion)
         }
-        XCTAssert(noOfIterations == expectedIterations, "NoOfIterations should be  \(expectedIterations) was \(noOfIterations)")
-        XCTAssert(noOfQuestionsLastTime == engine.settings.noOfQuestions % 5, "NoOfQuestionsLastTime should be \(engine.settings.noOfQuestions % 5), was \(noOfQuestionsLastTime)")
+        
+        // Activate next set of 2 questions
+        try engine.qm!.activateNextQuestion()
+        XCTAssertNotEqual(firstQuestion, engine.qm!.currentQuestions.first!)
+        XCTAssertEqual(engine.qm!.currentQuestions.count, 2)
+        
     }
 
     
@@ -57,87 +80,20 @@ final class GetQuestions: XCTestCase {
     func testGetGroupOfQuestionsSpecifiedByCountDefault() throws {
         // Should return ALL questions
         let engine = MLMathMasterEngine()
-        engine.newGame(category: .add, type: .sequence, base: [2])
-        
-        let questions = try engine.getQuestions()!
-        XCTAssert(questions.count == engine.settings.noOfQuestions, "questions count should be \(engine.settings.noOfQuestions), was \(questions.count)")
+        engine.newGame(category: .add, type: .sequence, base: [2], groupSize: -1)
+        try engine.qm!.activateNextQuestion()
+        XCTAssertEqual(engine.settings.noOfQuestions, engine.qm!.currentQuestions.count)
     }
 
     // CUSTOM ... should be 12
     // Singles
-    func testGetSingleQuestionCustomCount() {
+    func testGetSingleQuestionCustomCount() throws {
         let engine = MLMathMasterEngine()
-        engine.newGame(category: .add, type: .sequence, base: [2], noOfQuestions: 12)
+        engine.newGame(category: .add, type: .sequence, base: [2], noOfQuestions: 12, groupSize: -1)
 
-        var noOfQuestions = 0
-        while let _ = engine.getQuestion() {
-            noOfQuestions += 1
-        }
-        
-        XCTAssert(noOfQuestions == 12, "NoOfQuestions should be 12, was \(noOfQuestions)")
-    }
-    
-    // Group of 5
-    func testGetGroupOfQuestionsSpecifiedByCount5CustomCount() throws {
-        let engine = MLMathMasterEngine()
-        engine.newGame(category: .add, type: .sequence, base: [2], noOfQuestions: 12)
-        
-        var noOfQuestions = 0
-        var noOfIterations = 0
-        var noOfQuestionsLastTime = 0
-        while let questions = try engine.getQuestions(by: 5) {
-            noOfQuestionsLastTime = questions.count == 5 ? 0  : questions.count
-            noOfIterations += 1
-            questions.forEach { _ in
-                noOfQuestions += 1
-            }
-        }
-        XCTAssert(noOfQuestions == 12, "NoOfQuestions should be \(12) was \(noOfQuestions)")
-        
-        var expectedIterations = 12 / 5
-        if 12 % 5 > 0 {
-            expectedIterations += 1
-        }
-        XCTAssert(noOfIterations == expectedIterations, "NoOfIterations should be  \(expectedIterations) was \(noOfIterations)")
-        XCTAssert(noOfQuestionsLastTime == 12 % 5, "NoOfQuestionsLastTime should be \(12 % 5), was \(noOfQuestionsLastTime)")
-    }
+        try engine.qm!.activateNextQuestion()
+        XCTAssertEqual(12, engine.qm!.currentQuestions.count)
+        XCTAssertEqual(12, engine.qm!.gameData.noOfQuestions)
 
-    
-    // All
-    func testGetGroupOfQuestionsSpecifiedByCountDefaultCustomCount() throws {
-        // Should return ALL questions
-        let engine = MLMathMasterEngine()
-        engine.newGame(category: .add, type: .sequence, base: [2], noOfQuestions: 12)
-        
-        let questions = try engine.getQuestions()!
-        XCTAssert(questions.count == 12, "questions count should be 12, was \(questions.count)")
     }
-    
-    // MARK: - TimeAttack
-    func testGetSingleQuestionTimeAttack() {
-        let engine = MLMathMasterEngine()
-        engine.newGame(category: .random, max: 100, base: [2,3,4], timeAttackTime: .oneMin)
-        
-        let q = engine.getQuestion()
-        XCTAssertNotNil(q)
-        XCTAssertEqual(engine.questions.count, 1)
-    }
-    
-    func testGetGroupOfQuestionsSpecifiedByCount5CustomCountOnTimeAttackShouldFail() throws {
-        let engine = MLMathMasterEngine()
-        engine.newGame(category: .random, max: 100, base: [2,3,4], timeAttackTime: .oneMin)
-        
-        XCTAssertThrowsError(try engine.getQuestions(by: 5))
-        
-    }
-
-    func testGetGroupOfQuestionsGetAllOnTimeAttackShouldFail() throws {
-        let engine = MLMathMasterEngine()
-        engine.newGame(category: .random, max: 100, base: [2,3,4], timeAttackTime: .oneMin)
-        
-        XCTAssertThrowsError(try engine.getQuestions())
-        
-    }
-
-    
 }

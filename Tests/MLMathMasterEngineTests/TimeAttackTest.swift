@@ -1,6 +1,6 @@
 //
 //  File.swift
-//  
+//
 //
 //  Created by Michael Lekrans on 2021-05-10.
 //
@@ -14,26 +14,27 @@ final class TimeAttackTest: XCTestCase {
     // MARK: - new game
     func testStartNewGameTimeAttack() {
         let engine = MLMathMasterEngine()
-        engine.newGame(category: .random, max: 100, base: [2,3,4], timeAttackTime: .oneMin)
+        engine.newTimeAttackGame(category: .random, max: 100, base: [2,3,4], timeAttackTime: .oneMin)
         XCTAssert(engine.gameState == .initialized)
         XCTAssertNotNil(engine.gameData)
         XCTAssertTrue(engine.gameData!.type == .timeAttack(100))
         XCTAssertTrue(engine.gameData!.timeAttackTime == .oneMin)
         XCTAssertNotNil(engine.settings)
-        XCTAssertTrue(engine.unansweredQuestions.count == 0 )
-        XCTAssertTrue(engine.answeredQuestions == 0)
-        XCTAssertTrue(engine.noOfRightAnswers == 0)
-        XCTAssertTrue(engine.questions.count == 0)
+        XCTAssertTrue(engine.qm!.unansweredQuestions == -1 )
+        XCTAssertTrue(engine.qm!.answeredQuestions.count == 0)
+        XCTAssertTrue(engine.qm!.noOfRightAnswers == 0)
         XCTAssert(engine.currentTime == 0)
         XCTAssertNil(engine.startTime)
         XCTAssertNil(engine.stopTime)
         XCTAssertTrue(engine.totalTime == -1)
     }
     // MARK: - Start game
-    func testGetFirstQuestionShouldActivateQuestionAndSetStateToTimeAttackStarted() {
+    func testGetFirstQuestionShouldActivateQuestionAndSetStateToTimeAttackStarted() throws {
         let engine = MLMathMasterEngine()
-        engine.newGame(category: .random, max: 100, base: [1,2,3], timeAttackTime: .test10Sek)
-        let q = engine.getQuestion()!
+        engine.newTimeAttackGame(category: .random, max: 100, base: [1,2,3], timeAttackTime: .test10Sek)
+        
+        try engine.qm!.activateNextQuestion()
+        let q = engine.qm!.currentQuestion!
         
         XCTAssertTrue(engine.gameData!.type.isTimeAttack)
         XCTAssertTrue(q._active)
@@ -42,12 +43,12 @@ final class TimeAttackTest: XCTestCase {
     
     func testTimerShouldStartWhenStateIsTimeAttackStartedAndStopAfterGivenTime() throws {
         let engine = MLMathMasterEngine()
-        engine.newGame(category: .random, max: 100, base: [1,2,3], timeAttackTime: .test10Sek)
+        engine.newTimeAttackGame(category: .random, max: 100, base: [1,2,3], timeAttackTime: .test10Sek)
         
         let timer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { timer in
             do {
-                var q = engine.getQuestion()!
-                let _ = try engine.evaluateQuestion(question: &q, answer: 10000)
+                try engine.qm!.activateNextQuestion()
+                let _ = try engine.qm!.evaluateQuestion(answer: 10000)
             } catch {
                 print("Error")
             }
@@ -61,7 +62,7 @@ final class TimeAttackTest: XCTestCase {
         
         waitForExpectations(timeout: 100, handler: nil)
         
-        XCTAssert(engine.questions.count < 5 && engine.questions.count > 2)
+        XCTAssert(engine.qm!.answeredQuestions.count < 5 && engine.qm!.answeredQuestions.count > 2)
         
 
     }

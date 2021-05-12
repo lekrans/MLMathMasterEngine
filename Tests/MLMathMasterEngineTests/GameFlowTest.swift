@@ -1,6 +1,6 @@
 //
 //  File.swift
-//  
+//
 //
 //  Created by Michael Lekrans on 2021-05-09.
 //
@@ -16,19 +16,7 @@ final class GameFlowTest: XCTestCase {
         
     }
     // MARK: - Init game
-    func testNewGameInitialize() {
-        let engine = MLMathMasterEngine()
-        //engine.newGame(category: .add, type: .sequence, base: [2])
-        XCTAssert(engine.gameState == .none)
-        XCTAssertNil(engine.gameData)
-        XCTAssertNotNil(engine.settings)
-        XCTAssertTrue(engine.unansweredQuestions.count == 0 )
-        XCTAssertTrue(engine.answeredQuestions == 0)
-        XCTAssertTrue(engine.noOfRightAnswers == 0)
-        XCTAssertNil(engine.startTime)
-        XCTAssertNil(engine.stopTime)
-        XCTAssertTrue(engine.totalTime == -1)
-    }
+    
     // MARK: - Start new game
     func testStartNewGame() {
         let engine = MLMathMasterEngine()
@@ -36,10 +24,10 @@ final class GameFlowTest: XCTestCase {
         XCTAssert(engine.gameState == .initialized)
         XCTAssertNotNil(engine.gameData)
         XCTAssertNotNil(engine.settings)
-        XCTAssertTrue(engine.unansweredQuestions.count == engine.settings.noOfQuestions )
-        XCTAssertTrue(engine.answeredQuestions == 0)
-        XCTAssertTrue(engine.noOfRightAnswers == 0)
-        XCTAssertTrue(engine.questions.count == engine.settings.noOfQuestions)
+        XCTAssertTrue(engine.qm!.unansweredQuestions == engine.settings.noOfQuestions )
+        XCTAssertTrue(engine.qm!.answeredQuestions.count == 0)
+        XCTAssertTrue(engine.qm!.noOfRightAnswers == 0)
+        XCTAssertTrue(engine.qm!.gameData.noOfQuestions == engine.settings.noOfQuestions)
         XCTAssertNil(engine.startTime)
         XCTAssertNil(engine.stopTime)
         XCTAssertTrue(engine.totalTime == -1)
@@ -56,10 +44,10 @@ final class GameFlowTest: XCTestCase {
         Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
             currentIndex += 1
             do {
-                if var q = engine.getQuestion() {
+                try engine.qm!.activateNextQuestion()
+                if let q = engine.qm!.currentQuestion {
                     let answer = q.value1 + q.value2
-                    try engine.activate(question: q)
-                    let _ = try engine.evaluateQuestion(question: &q, answer: currentIndex == wrongAnswerIndex ? 90000000 : answer)
+                    let _ = try engine.qm!.evaluateQuestion(answer: currentIndex == wrongAnswerIndex ? 90000000 : answer)
                     print(q.result!.answer)
                 } else {
                     expectation.fulfill()
@@ -73,11 +61,12 @@ final class GameFlowTest: XCTestCase {
         self.waitForExpectations(timeout: 12) { _ in
             
             XCTAssertTrue(engine.gameState == .stopped)
-            XCTAssertTrue(engine.answeredQuestions == engine.questions.count)
+            XCTAssertTrue(engine.qm!.answeredQuestions.count == engine.qm!.gameData.noOfQuestions)
             var isActive =  false
             var doesHaveStartAndStopTime = true
             var totalTime: Double = 0
-            engine.questions.forEach { (q) in
+            
+            engine.qm!.answeredQuestions.forEach { (q) in
                 isActive = isActive || q._active
                 print("q starttime = \(String(describing: q.startTime)) stopTime: \(String(describing: q.stopTime))")
                 doesHaveStartAndStopTime = doesHaveStartAndStopTime
@@ -87,9 +76,11 @@ final class GameFlowTest: XCTestCase {
             }
             XCTAssertFalse(isActive)
             XCTAssertTrue(doesHaveStartAndStopTime)
-            XCTAssertEqual(round(totalTime), round(engine.totalTime))
-            XCTAssertEqual(engine.answeredQuestions, engine.questions.count)
-            XCTAssertEqual(engine.noOfRightAnswers, engine.questions.count - 1)
+            XCTAssertNotNil(engine.startTime)
+            XCTAssertNotNil(engine.stopTime)
+            XCTAssertEqual(round(totalTime), round(engine.totalTime), "calculated Total time \(round(totalTime))(based on totalTime on question) should be equal to engines totalTime \(round(engine.totalTime))" )
+            XCTAssertEqual(engine.qm!.answeredQuestions.count, engine.qm!.gameData.noOfQuestions)
+            XCTAssertEqual(engine.qm!.noOfRightAnswers, engine.qm!.answeredQuestions.count - 1)
             
             
         }
@@ -99,20 +90,7 @@ final class GameFlowTest: XCTestCase {
     let b = {
         
     }
-    // MARK: - Init game
-    func testNewGameInitializeV2() {
-        let engine = MLMathMasterEngine()
-        //engine.newGame(category: .add, type: .sequence, base: [2])
-        XCTAssert(engine.gameState == .none)
-        XCTAssertNil(engine.gameData)
-        XCTAssertNotNil(engine.settings)
-        XCTAssertTrue(engine.unansweredQuestions.count == 0 )
-        XCTAssertTrue(engine.answeredQuestions == 0)
-        XCTAssertTrue(engine.noOfRightAnswers == 0)
-        XCTAssertNil(engine.startTime)
-        XCTAssertNil(engine.stopTime)
-        XCTAssertTrue(engine.totalTime == -1)
-    }
+    
     // MARK: - Start new game
     func testStartNewGameV2() {
         let engine = MLMathMasterEngine()
@@ -120,10 +98,10 @@ final class GameFlowTest: XCTestCase {
         XCTAssert(engine.gameState == .initialized)
         XCTAssertNotNil(engine.gameData)
         XCTAssertNotNil(engine.settings)
-        XCTAssertTrue(engine.unansweredQuestions.count == engine.settings.noOfQuestions )
-        XCTAssertTrue(engine.answeredQuestions == 0)
-        XCTAssertTrue(engine.noOfRightAnswers == 0)
-        XCTAssertTrue(engine.questions.count == engine.settings.noOfQuestions)
+        XCTAssertTrue(engine.qm!.unansweredQuestions == engine.settings.noOfQuestions )
+        XCTAssertTrue(engine.qm!.answeredQuestions.count == 0)
+        XCTAssertTrue(engine.qm!.noOfRightAnswers == 0)
+        XCTAssertTrue(engine.qm!.gameData.noOfQuestions == engine.settings.noOfQuestions)
         XCTAssertNil(engine.startTime)
         XCTAssertNil(engine.stopTime)
         XCTAssertTrue(engine.totalTime == -1)
@@ -140,7 +118,8 @@ final class GameFlowTest: XCTestCase {
         Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { timer in
             currentIndex += 1
             do {
-                if var q = engine.getQuestion() {
+                try engine.qm!.activateNextQuestion()
+                if let q = engine.qm!.currentQuestion {
                     var answer: Int {
                         switch q.category {
                         case .add:
@@ -153,8 +132,7 @@ final class GameFlowTest: XCTestCase {
                             return 0
                         }
                     }
-                    try engine.activate(question: q)
-                    let _ = try engine.evaluateQuestion(question: &q, answer: currentIndex == wrongAnswerIndex ? 90000000 : answer)
+                    let _ = try engine.qm!.evaluateQuestion(answer: currentIndex == wrongAnswerIndex ? 90000000 : answer)
                     print(q.result!.answer)
                 } else {
                     expectation.fulfill()
@@ -168,11 +146,11 @@ final class GameFlowTest: XCTestCase {
         self.waitForExpectations(timeout: 15) { _ in
             
             XCTAssertTrue(engine.gameState == .stopped)
-            XCTAssertTrue(engine.answeredQuestions == engine.questions.count)
+            XCTAssertTrue(engine.qm!.answeredQuestions.count == engine.qm!.gameData.noOfQuestions)
             var isActive =  false
             var doesHaveStartAndStopTime = true
             var totalTime: Double = 0
-            engine.questions.forEach { (q) in
+            engine.qm!.answeredQuestions.forEach { (q) in
                 isActive = isActive || q._active
                 print("q starttime = \(String(describing: q.startTime)) stopTime: \(String(describing: q.stopTime))")
                 doesHaveStartAndStopTime = doesHaveStartAndStopTime
@@ -182,10 +160,10 @@ final class GameFlowTest: XCTestCase {
             }
             XCTAssertFalse(isActive)
             XCTAssertTrue(doesHaveStartAndStopTime)
-            XCTAssertEqual(engine.questions.count, 30)
+            XCTAssertEqual(engine.qm!.answeredQuestions.count, 30)
             XCTAssertEqual(round(totalTime), round(engine.totalTime))
-            XCTAssertEqual(engine.answeredQuestions, engine.questions.count)
-            XCTAssertEqual(engine.noOfRightAnswers, engine.questions.count - 1)
+            XCTAssertEqual(engine.qm!.answeredQuestions.count, engine.qm!.gameData.noOfQuestions)
+            XCTAssertEqual(engine.qm!.noOfRightAnswers, engine.qm!.answeredQuestions.count - 1)
             
             
         }
@@ -199,16 +177,15 @@ final class GameFlowTest: XCTestCase {
     // MARK: - Start new game
     func testStartNewGameTimeAttack() {
         let engine = MLMathMasterEngine()
-        engine.newGame(category: .random, max: 100, base: [2,3,4], timeAttackTime: .oneMin)
+        engine.newTimeAttackGame(category: .random, max: 100, base: [2,3,4], timeAttackTime: .oneMin)
         XCTAssert(engine.gameState == .initialized)
         XCTAssertNotNil(engine.gameData)
         XCTAssertTrue(engine.gameData!.type == .timeAttack(100))
         XCTAssertTrue(engine.gameData!.timeAttackTime == .oneMin)
         XCTAssertNotNil(engine.settings)
-        XCTAssertTrue(engine.unansweredQuestions.count == 0 )
-        XCTAssertTrue(engine.answeredQuestions == 0)
-        XCTAssertTrue(engine.noOfRightAnswers == 0)
-        XCTAssertTrue(engine.questions.count == 0)
+        XCTAssertTrue(engine.qm!.unansweredQuestions == -1 ) // in timeAttack this value is -1
+        XCTAssertTrue(engine.qm!.answeredQuestions.count == 0)
+        XCTAssertTrue(engine.qm!.noOfRightAnswers == 0)
         XCTAssert(engine.currentTime == 0)
         XCTAssertNil(engine.startTime)
         XCTAssertNil(engine.stopTime)
@@ -218,7 +195,7 @@ final class GameFlowTest: XCTestCase {
     // MARK: - Run add sequence base 2 game
     func testRunGameTimeAttack() {
         let engine = MLMathMasterEngine()
-        engine.newGame(category: .subtract, max: 100, base: [2, 4, 6], timeAttackTime: .test10Sek)
+        engine.newTimeAttackGame(category: .subtract, max: 100, base: [2,4,6], timeAttackTime: .test10Sek)
         
         let wrongAnswerIndex = 3
         var currentIndex = 0
@@ -227,7 +204,8 @@ final class GameFlowTest: XCTestCase {
             currentIndex += 1
             do {
                 // TODO: Fix the question .. for timeAttack.. right now there are no questions created
-                if var q = engine.getQuestion() {
+                try engine.qm!.activateNextQuestion()
+                if let q = engine.qm!.currentQuestion {
                     var answer: Int {
                         switch q.category {
                         case .add:
@@ -240,7 +218,7 @@ final class GameFlowTest: XCTestCase {
                             return 0
                         }
                     }
-                    let _ = try engine.evaluateQuestion(question: &q, answer: currentIndex == wrongAnswerIndex ? 90000000 : answer)
+                    let _ = try engine.qm!.evaluateQuestion(answer: currentIndex == wrongAnswerIndex ? 90000000 : answer)
                     print(q.result!.answer)
                 }
                 XCTAssertTrue(engine.gameState == .timeAttackStarted)
@@ -259,15 +237,8 @@ final class GameFlowTest: XCTestCase {
         self.waitForExpectations(timeout: 4000) { _ in
             
             XCTAssertTrue(engine.gameState == .stopped)
-            XCTAssertTrue(engine.answeredQuestions == engine.questions.count)
-            var isActive =  false
-            engine.questions.forEach { (q) in
-                isActive = isActive || q._active
-            }
-            XCTAssertFalse(isActive)
-            XCTAssert(engine.questions.count < 7 && engine.questions.count > 4)
-            XCTAssertEqual(engine.answeredQuestions, engine.questions.count)
-            XCTAssertEqual(engine.noOfRightAnswers, engine.questions.count - 1)
+            XCTAssert(engine.qm!.answeredQuestions.count < 7 && engine.qm!.answeredQuestions.count > 4)
+            XCTAssertEqual(engine.qm!.noOfRightAnswers, engine.qm!.answeredQuestions.count - 1)
             
             
         }

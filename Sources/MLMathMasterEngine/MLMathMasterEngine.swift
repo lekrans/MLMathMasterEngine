@@ -97,6 +97,8 @@ public struct MLMathMasterGameData {
     var type: MLMathMasterGameType
     var base: [Int] = []
     var timeAttackTime: MLMathMasterGameTimeAttackTime = .none
+    var groupSize: Int
+    var noOfQuestions: Int
 }
 
 
@@ -151,13 +153,20 @@ public class MLMathMasterQuestion: Identifiable, Equatable {
             }
         }
     }
+    fileprivate(set) var evaluated: Bool = false {
+        willSet {
+            if newValue == true {
+                stopTime = .now()
+            }
+        }
+    }
     
     public var active: Bool {
         get {
             return self._active
         }
     }
-     
+    
     public var startTime: DispatchTime?
     public var stopTime: DispatchTime?
     
@@ -222,37 +231,315 @@ extension MLMathMasterEngineError: LocalizedError {
     }
 }
 
+// MARK: -  Notifications
 enum MLMathMasterEngineNotifications: String {
     case timeAttackStart = "TimeAttackStart"
     case timeAttackEnd = "TimeAttackEnd"
 }
+
+
+
+// MARK: - QuestionManagerDelegate
+public protocol MLMathMasterGameQuestionManagerDelegate {
+    func lastQuestionEvaluated()
+    func firstQuestionActivated()
+}
+
+
+
+
+// MARK: - QuestionManager
+@available(iOS 13.0, *)
+/// Manages all questions in the game.
+///  it will generate questions up to `noOfQuestions` in a rate specified by `groupSize`
+///  if groupSize = -1 then all questions will be generated at once and stored into currentQuestions
+///  if groupSize != -1 then the amount of questions specified by `groupSize` will be generated.. and when
+///  the last question is evaluated of the currentQuestions a new batch is fetched.
+///
+///  Activate question, Evaluate question and so on refere to the currentQuestion
+///
+public class MLMathMasterGameQuestionManager {
+    // MARK: - Private properties
+    
+    
+    // MARK: - Public properties
+    public var gameData: MLMathMasterGameData
+    public var currentQuestions: [MLMathMasterQuestion] = []
+    public var currentQuestion: MLMathMasterQuestion?
+    public var answeredQuestions: [MLMathMasterQuestion] = []
+    public var noOfRightAnswers: Int {
+        return answeredQuestions.reduce(0) { (result, question) -> Int in
+            guard let qResult = question.result, qResult.success else { return result}
+            
+            return result + 1
+        }
+    }
+    
+    public var unansweredQuestions: Int {
+        return gameData.type.isTimeAttack
+            ? -1
+            : gameData.noOfQuestions - answeredQuestions.count
+    }
+    
+    public var delegate: MLMathMasterGameQuestionManagerDelegate?
+    
+    // MARK: - life cycle
+    public init (
+        gameData: MLMathMasterGameData
+    ) {
+        self.gameData = gameData
+    }
+    
+    
+    // MARK: - Private Methods
+    private func generateNewQuestion(index: Int?) -> MLMathMasterQuestion {
+        
+        let i = index ?? self.answeredQuestions.count
+        let questionCategory = self.gameData.category != .random ? self.gameData.category : MLMathMasterGameCategory.random()
+        
+        return MLMathMasterQuestion(
+            value1: getValue1(),
+            value2: getValue2(index: i),
+            category: questionCategory)
+    }
+    
+    /// Generate a value for `value1` based on the `base` value.
+    /// If the `base` value is a single value we just return that value.. otherwise we randomize between the values in the `base` array
+    /// - Returns: Integer value
+    private func getValue1() -> Int {
+        if gameData.base != [] {
+            if gameData.base.count == 1 {
+                return gameData.base[0]
+            } else {
+                return gameData.base[Int.random(in: 0...gameData.base.count-1)]
+            }
+        } else {
+            print("No Base value \(#function)")
+            return 0
+        }
+    }
+    
+    
+    
+    /// Generate a value for `value2` based on the `type` value in `gameData`
+    /// If it is a `.sequence` we just return the `index` supplied to the method otherwise (not sequence) we randomize the number
+    /// - Parameter index: value that can be used to create a sequence if the gameType is .sequence
+    /// - Returns: The value
+    private func getValue2(index: Int) -> Int {
+        if  gameData.base != [] {
+            switch gameData.type {
+            case .sequence:
+                return index - 1
+            case .random(let max):
+                return Int.random(in: 1...max)
+            case .timeAttack(let max):
+                return Int.random(in: 1...max)
+            }
+        } else {
+            print("No base value \(#function)")
+            return 0
+        }
+    }
+    
+    private func newBatchRequired() -> Bool {
+        return currentQuestions == [] || lastQuestionInBatchEvaluated()
+    }
+        
+    private func lastQuestionInBatchEvaluated() -> Bool {
+        guard currentQuestions.count > 0 else { return false }
+        
+        return currentQuestions.last!.result != nil
+    }
+    
+    private func lastQuestionEvaluated() -> Bool {
+        if gameData.noOfQuestions == -1 {
+            return false
+        }
+        
+        return gameData.noOfQuestions == answeredQuestions.count
+    }
+    
+    private func isFirstQuestion() -> Bool {
+        return answeredQuestions.count == 0
+    }
+    
+    
+    private func createNewQuestions() {
+        currentQuestions = []
+        var count: Int
+        
+        let groupSize = gameData.groupSize == -1 ? gameData.noOfQuestions : gameData.groupSize
+        
+        // if timeAttackGame.. just return groupSize
+        if gameData.noOfQuestions == -1 {
+            count = groupSize
+        } else {
+            count = min(groupSize, gameData.noOfQuestions - answeredQuestions.count)
+        }
+        
+        
+        
+        guard count > 0 else { return }
+        
+        let offset = self.answeredQuestions.count
+        
+        /// Need to think about how to specify count.. when noOfQuestions = -1 we want to feed it for ever
+        for i in (1...count) {
+            currentQuestions.append(generateNewQuestion(index: i + offset))
+        }
+    }
+    
+    
+    /// Return next question from currentQuestions. if there is no currently active questions we return the first
+    /// - Returns: <#description#>
+    private func getNextQuestion() -> MLMathMasterQuestion {
+        var question: MLMathMasterQuestion?
+        
+        for (index, element) in currentQuestions.enumerated() {
+            if element.active && index < currentQuestions.count - 1 {
+                question = currentQuestions[index + 1]
+                break
+            }
+        }
+        return question ?? currentQuestions[0]
+    }
+    
+    
+    /// Evaluates the value by combining the two values in the question with the right operator specified by the gameData.category type
+    /// - Parameter question: <#question description#>
+    /// - Returns: <#description#>
+    private func getResultOf(question: MLMathMasterQuestion) -> Int {
+        switch question.category {
+        case .add:
+            return question.value1 + question.value2
+        case .subtract:
+            return question.value1 - question.value2
+        case .multiply:
+            return question.value1 * question.value2
+        default:
+            return -1
+        }
+    }
+    
+    /// Adds the result to the question.. the reason for this is that its value typed and I could not get the value back in a nice way..
+    /// - Parameters:
+    ///   - question: the question that will get a result struct
+    ///   - result: the result struct
+    private func addResultToQuestion(result: MLMathMasterQuestionResult) {
+        currentQuestion?.result = result
+    }
+    
+    
+    private func addCurrentQuestionToAnsweredQuestions() {
+        guard let question = currentQuestion else { return }
+        answeredQuestions.append(question)
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    // MARK: - Public Methods
+    
+    /// Get the next question to be activated. Inactivate previous activated question
+    /// - Returns: optional Question
+    public func activateNextQuestion() throws {
+        
+        guard !lastQuestionEvaluated() else {
+            currentQuestion = nil
+            return
+        }
+        
+        // check if current question is not evaluated yet.. that is an error
+        if currentQuestion  != nil
+            && currentQuestion?.result == nil {
+               throw MLMathMasterEngineError.activateQuestionWhenPreviousQuestionIsNotEvaluated
+           }
+        
+        
+        
+        if newBatchRequired() {
+            createNewQuestions()
+        }
+        
+        
+        let nextQuestion = getNextQuestion()
+        currentQuestion?._active = false
+        currentQuestion = nextQuestion
+        currentQuestion?._active = true
+
+        if isFirstQuestion() {
+            delegate?.firstQuestionActivated()
+        }
+    }
+    
+    /// Evaluates a MLMathMasterQuestion by calling `getResultOf` that returns the answer
+    /// It then creates a result-struct (MLMathMasterQuestionResult), attaches the result to the question,
+    /// removes the question from `unansweredQuestions` and returns the result
+    /// - Parameters:
+    ///   - question: the question to evaluate
+    ///   - answer: the players answer
+    /// - Returns: A MLMathMasterQuestionResult containing the result
+    public func evaluateQuestion(answer: Int) throws -> MLMathMasterQuestionResult? {
+        guard currentQuestion?._active == true else {
+            throw MLMathMasterEngineError.evaluateQuestionBeforeItsActivated
+        }
+        
+        let correctAnswer = getResultOf(question: currentQuestion!)
+        let result = MLMathMasterQuestionResult(
+            answer: answer,
+            expectedAnswer: correctAnswer)
+        
+        currentQuestion?.evaluated = true
+        addResultToQuestion(result: result)
+        addCurrentQuestionToAnsweredQuestions()
+
+        if lastQuestionEvaluated() {
+            answeredQuestions.last!._active = false
+            currentQuestion?._active = false
+            delegate?.lastQuestionEvaluated()
+        }
+
+        
+
+        return result
+    }
+    
+    
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 // MARK: - Engine
 /// The MLMathMaster game engine.
 /// The controller of the game.
 /// You initialize a new game by calling `func newGame()` and specify what type and category and so on you want to test
 @available(iOS 13.0, *)
-public class MLMathMasterEngine: ObservableObject {
+public class MLMathMasterEngine: ObservableObject{
     
     // MARK: - private properties
     private var timer: Timer?
-    private var noOfFetchedQuestions: Int = 0
-    private var currentQuestion: MLMathMasterQuestion? {
-        willSet {
-            if currentQuestion != nil {
-                currentQuestion!._active = false
-                
-            }
-            newValue?._active = false
-        }
-    }
-    
+
     // MARK: - public properties
-    @Published public var questions: [MLMathMasterQuestion] = []
-    
-    var gameData: MLMathMasterGameData?
-    var settings: MLMathMasterGameSettings
-    @Published public var unansweredQuestions: [MLMathMasterQuestion] = []
+    //    @Published public var questions: [MLMathMasterQuestion] = []
+    @Published public var qm: MLMathMasterGameQuestionManager?
+    @Published public var gameData: MLMathMasterGameData?
+    @Published public var settings: MLMathMasterGameSettings
     @Published public var gameState: MLMathMasterGameState = .none {
         didSet {
             switch gameState {
@@ -282,23 +569,7 @@ public class MLMathMasterEngine: ObservableObject {
             }
         }
     }
-
-    // MARK: - Computed properties
-    var answeredQuestions: Int {
-        questions.count - unansweredQuestions.count
-    }
-    var noOfRightAnswers: Int {
-        var count = 0
-        questions.forEach { (question) in
-            if let result = question.result {
-                if result.success == true {
-                    count += 1
-                }
-            }
-        }
-        return count
-    }
-    
+        
     public var startTime: DispatchTime?
     public var stopTime: DispatchTime?
     @Published public var currentTime: Double = 0 // seconds
@@ -317,161 +588,12 @@ public class MLMathMasterEngine: ObservableObject {
     
     
     
-        
+    
     // MARK: - Private methods
     
     
-    /// Reset and regenerates new questions based on the `count` value. These questions are stored in the `self.questions` array
-    /// - Parameter count: No of questions to produce
-    private func generateNewQuestions(count: Int) {
-
-        questions = []
-        for i in 1...count {
-            questions.append(generateNewQuestion(index: i))
-        }
-        /// value semantic so this is a full copy
-        self.unansweredQuestions = questions
-    }
-    
-    
-    /// Generate one question
-    /// - Parameter index: optional value for creating sequences GenerateNewQuestions use this parameter to generate a sequence of values if the type is .sequence
-    /// - Returns: A MLMathMasterQuestion
-    private func generateNewQuestion(index: Int?) -> MLMathMasterQuestion {
-        
-        guard let gameData = self.gameData else {
-            fatalError("No GameData when generating questions")
-        }
-        
-        let i = index ?? questions.count
-        let category = gameData.category != .random ? gameData.category : MLMathMasterGameCategory.random()
-        
-        return MLMathMasterQuestion(
-                            value1: getValue1(),
-                            value2: getValue2(index: i),
-                            category: category)
-    }
-
-    /// Generate a value for `value1` based on the `base` value in `gameData`.
-    /// If the `base` value is a single value we just return that value.. otherwise we randomize between the values in the `base` array
-    /// - Returns: <#description#>
-    private func getValue1() -> Int {
-        if let gameData = gameData {
-            if gameData.base.count == 1 {
-                return gameData.base[0]
-            } else {
-                return gameData.base[Int.random(in: 0...gameData.base.count-1)]
-            }
-        } else {
-            print("No GameData \(#function)")
-            return 0
-        }
-    }
-    
-    
-    /// Generate a value for `value2` based on the `type` value in `gameData`
-    /// If it is a `.sequence` we just return the `index` supplied to the method otherwise (not sequence) we randomize the number
-    /// - Parameter index: <#index description#>
-    /// - Returns: <#description#>
-    private func getValue2(index: Int) -> Int {
-        if let gameData = gameData {
-            switch gameData.type {
-            case .sequence:
-                return index - 1
-            case .random(let max):
-                return Int.random(in: 1...max)
-            case .timeAttack(let max):
-                return Int.random(in: 1...max)
-            }
-        } else {
-            print("No GameData \(#function)")
-            return 0
-        }
-    }
-    
-    
-    /// Remove the evaluated question from the list of unanswered questions
-    /// - Parameter question: the question to be removed
-    private func removeQuestionFromRemaining(question: MLMathMasterQuestion) {
-        let index = self.unansweredQuestions.firstIndex { q -> Bool in
-            q.id == question.id
-        }
-        if let index = index {
-            self.unansweredQuestions.remove(at: index)
-        }
-    }
-    
-    
-    /// Adds the result to the question.. the reason for this is that its value typed and I could not get the value back in a nice way..
-    /// - Parameters:
-    ///   - question: the question that will get a result struct
-    ///   - result: the result struct
-    private func addResultToQuestion(question: MLMathMasterQuestion, result: MLMathMasterQuestionResult) {
-        let index = self.questions.firstIndex { (q) -> Bool in
-            q.id == question.id
-        }
-        if let index = index {
-                self.questions[index].result = result
-        }
-    }
-    
-    /// Evaluates the value by combining the two values in the question with the right operator specified by the gameData.category type
-    /// - Parameter question: <#question description#>
-    /// - Returns: <#description#>
-    private func getResultOf(question: MLMathMasterQuestion) -> Int {
-        switch question.category {
-        case .add:
-            return question.value1 + question.value2
-        case .subtract:
-            return question.value1 - question.value2
-        case .multiply:
-            return question.value1 * question.value2
-        default:
-            return -1
-        }
-    }
-    
-    private func isLast(question: MLMathMasterQuestion) -> Bool {
-        return self.questions[questions.count - 1] == question
-    }
-    
-    private func newTimeAttackGame(category: MLMathMasterGameCategory, type: MLMathMasterGameType, base: [Int], timeAttackTime: MLMathMasterGameTimeAttackTime) {
-        
-        self.gameData = MLMathMasterGameData(category: category, type: type, base: base, timeAttackTime: timeAttackTime)
-
-        self.noOfFetchedQuestions = 0
-        self.gameState = .initialized
-    }
-    
-    private func getTimeAttackQuestion() -> MLMathMasterQuestion{
-        var q: MLMathMasterQuestion
-        do {
-            q = generateNewQuestion(index: nil)
-            try self._activate(question: q)
-            self.questions.append(q)
-        } catch {
-            print("Unresolved error generating TimeAttackQuestion. \(error), \(error.localizedDescription)")
-        }
-        return q
-    }
-    
-    
-    private func _activate(question: MLMathMasterQuestion) throws {
-        
-        if currentQuestion  != nil && currentQuestion?.result == nil {
-            throw MLMathMasterEngineError.activateQuestionWhenPreviousQuestionIsNotEvaluated
-        }
-        
-        currentQuestion = question
-        question._active = true
-        
-        if self.gameState != .started,   !self.gameData!.type.isTimeAttack {
-            self.gameState = .started
-        }
-    }
-    
     // MARK: - Public methods
-
+    
     
     /// Start new game.
     /// Creates a new GameData (MLMathMasterGameData) struct based.
@@ -482,127 +604,61 @@ public class MLMathMasterEngine: ObservableObject {
     ///   - type: MLMathMasterGameType: Wheter it is .sequense (like tables) or .random (for challange)
     ///   - base: [Int], array of what numbers are the base for testing.. like [2] .. testing variants based on to like (2+3 if .add) (2*6 if .mult) and so on
     ///   - noOfQuestions: Optional number of questions.. overrides the `settings.noOfQuestions` to produce
-    public func newGame(
+    public func newTimeAttackGame(
         category: MLMathMasterGameCategory,
         max: Int,
         base: [Int],
         timeAttackTime: MLMathMasterGameTimeAttackTime) {
-            newTimeAttackGame(category: category,
-                              type: .timeAttack(max),
-                              base: base,
-                              timeAttackTime: timeAttackTime)
+        gameData = MLMathMasterGameData(category: category, type: .timeAttack(max), base: base, timeAttackTime: timeAttackTime, groupSize: 1, noOfQuestions: -1)
+        
+        qm = MLMathMasterGameQuestionManager(gameData: gameData!)
+        qm?.delegate = self
+        gameState = .initialized
     }
     
     public func newGame(
         category: MLMathMasterGameCategory,
         type: MLMathMasterGameType,
         base: [Int],
-        noOfQuestions: Int? = nil) {
-       
-        self.gameData = MLMathMasterGameData(category: category, type: type, base: base)
-        generateNewQuestions(count: noOfQuestions ?? self.settings.noOfQuestions)
-        self.noOfFetchedQuestions = 0
-        self.gameState = .initialized
+        noOfQuestions: Int? = nil,
+        groupSize: Int = 1) {
+        
+        gameData = MLMathMasterGameData(category: category, type: type, base: base, groupSize: groupSize, noOfQuestions: noOfQuestions ?? settings.noOfQuestions)
+        qm = MLMathMasterGameQuestionManager(gameData: gameData!)
+        
+        qm?.delegate = self
+        
+        gameState = .initialized
     }
     
     
     
-    /// Returns questions specified by `count`. If there is not enough questions for `count` it will return what is left. If there are no more questions to return it will return `nil`
-    /// The private property `noOfFetchedQuestions` keeps track of how many questions have been delivered
-    /// The default value for `count` is one.. meaning that if count is not specified it will return one question
-    /// - Parameter count: The maximum numbers of questions we want to get
-    /// - Returns: Optional array of questions. Max will be `count`. If there is not enough questions left to satisfy `count` the remaing questions are returned. If there are no more questions to return it will return nil
-    public func getQuestions(by count: Int) throws -> [MLMathMasterQuestion]? {
-       
-        if case .timeAttack = self.gameData!.type {
-            throw MLMathMasterEngineError.notAllowedInTimeAttack
-        }
-        
-        guard questions.count > self.noOfFetchedQuestions else {
-            return nil
-        }
-        
-        let nextIndex = self.noOfFetchedQuestions
-        /// get count questions OR if there is not enough get the rest
-        let actualCount = min(questions.count - self.noOfFetchedQuestions, count)
-        self.noOfFetchedQuestions += count
-
-        return Array(questions[nextIndex..<nextIndex + actualCount])
-    }
-
-    public func getQuestions() throws -> [MLMathMasterQuestion]? {
-        if case .timeAttack = self.gameData!.type {
-            throw MLMathMasterEngineError.notAllowedInTimeAttack
-        }
-        return self.questions
-    }
-
     
-    /// Get a single question. self.noOfFetchedQuestions will be incremented. If there are no more questions this method returns nil
-    /// - Returns: One question if there are questions left.. otherwise nil
-    public func getQuestion() -> MLMathMasterQuestion? {
-        if case .timeAttack = self.gameData!.type {
-            if self.gameState != .timeAttackStarted {
-                self.gameState = .timeAttackStarted
-            }
-            return getTimeAttackQuestion()
+    public func startGame() {
+        guard let gameData = gameData else { return }
+        
+        if gameData.type.isTimeAttack {
+            self.gameState = .timeAttackStarted
+        } else {
+            self.gameState = .started
         }
-        
-        guard questions.count > self.noOfFetchedQuestions else {
-            // we passed the last question and therefore stop the global time
-            currentQuestion = nil
-            stopGame()
-            return nil
-        }
-        
-        
-        let index = self.noOfFetchedQuestions
-        self.noOfFetchedQuestions += 1
-        
-        
-        return questions[index]
-    }
-    
-    
-    /// Evaluates a MLMathMasterQuestion by calling `getResultOf` that returns the answer
-    /// It then creates a result-struct (MLMathMasterQuestionResult), attaches the result to the question,
-    /// removes the question from `unansweredQuestions` and returns the result
-    /// - Parameters:
-    ///   - question: the question to evaluate
-    ///   - answer: the players answer
-    /// - Returns: A MLMathMasterQuestionResult containing the result
-    public func evaluateQuestion(question: inout MLMathMasterQuestion, answer: Int) throws -> MLMathMasterQuestionResult? {
-        guard question._active == true else {
-            throw MLMathMasterEngineError.evaluateQuestionBeforeItsActivated
-        }
-        
-        let correctAnswer = getResultOf(question: question)
-        let result = MLMathMasterQuestionResult(
-            answer: answer,
-            expectedAnswer: correctAnswer)
-        addResultToQuestion(question: question, result: result)
-        removeQuestionFromRemaining(question: question)
-        question._active = false
-        
-        if !self.gameData!.type.isTimeAttack, isLast(question: question) {
-            stopGame()
-        }
-        return result
-    }
-    
-    public func activate(question: MLMathMasterQuestion) throws {
-        
-        if self.gameData!.type.isTimeAttack {
-            throw MLMathMasterEngineError.notAllowedInTimeAttack
-        }
-        
-        try _activate(question: question)
     }
     
     public func stopGame() {
         self.gameState = .stopped
     }
+}
+
+
+@available(iOS 13.0, *)
+extension MLMathMasterEngine: MLMathMasterGameQuestionManagerDelegate {
+    public func lastQuestionEvaluated() {
+        self.stopGame()
+    }
     
+    public func firstQuestionActivated() {
+        self.startGame()
+    }
     
     
 }

@@ -10,39 +10,32 @@ import XCTest
 @available(iOS 13.0, *)
 class QuestionStateTest: XCTestCase {
 
-    func testFetchedQuestionShouldBeInitialized() {
+    func testFetchedQuestionShouldBeInitialized() throws {
         let engine = MLMathMasterEngine()
         engine.newGame(category: .add, type: .sequence, base: [2])
-        let q = engine.getQuestion()!
-        XCTAssertTrue(q._active == false)
-        XCTAssertTrue(q.category == .add)
-        XCTAssertNil(q.result)
-        XCTAssertNil(q.startTime)
-        XCTAssertNil(q.stopTime)
-        XCTAssert(q.totalTime == -1.0)
+        try engine.qm!.activateNextQuestion()
+        XCTAssertTrue(engine.qm!.currentQuestion!._active == true)
+        XCTAssertTrue(engine.qm!.currentQuestion!.category == .add)
+        XCTAssertNil(engine.qm!.currentQuestion!.result)
+        XCTAssertNotNil(engine.qm!.currentQuestion!.startTime)
+        XCTAssertNil(engine.qm!.currentQuestion!.stopTime)
+        XCTAssert(engine.qm!.currentQuestion!.totalTime == -1.0)
     }
     
     func testSettingQuestionActiveChangeStateAndStartTime() {
         do {
             let engine = MLMathMasterEngine()
             engine.newGame(category: .add, type: .sequence, base: [2])
-            let q = engine.getQuestion()!
-            try engine.activate(question: q)
-            XCTAssertTrue(q._active)
-            XCTAssertNotNil(q.startTime)
-            XCTAssertNil(q.stopTime)
+            try engine.qm!.activateNextQuestion()
+            XCTAssertTrue(engine.qm!.currentQuestion!._active)
+            XCTAssertNotNil(engine.qm!.currentQuestion!.startTime)
+            XCTAssertNil(engine.qm!.currentQuestion!.stopTime)
         } catch {
             XCTFail()
         }
 
     }
     
-    func testEvaluateQuestionThatIsNotActivatedResultsInError() throws {
-        let engine = MLMathMasterEngine()
-        engine.newGame(category: .add, type: .sequence, base: [2])
-        var q = engine.getQuestion()!
-        XCTAssertThrowsError(try engine.evaluateQuestion(question: &q, answer: 3))
-    }
     
     func testActivateNewQuestionWhenActivatedQuestionIsNotEvaluatedResultInNil() {
         let engine = MLMathMasterEngine()
@@ -50,10 +43,8 @@ class QuestionStateTest: XCTestCase {
         let caughtError: Error?
         
         do {
-            let q = engine.getQuestion()!
-            try engine.activate(question: q)
-            let q2 = engine.getQuestion()!
-            try engine.activate(question: q2)
+            try engine.qm!.activateNextQuestion()
+            try engine.qm!.activateNextQuestion()
             XCTFail()
         } catch {
             caughtError = error
@@ -68,13 +59,12 @@ class QuestionStateTest: XCTestCase {
         do {
         let engine = MLMathMasterEngine()
         engine.newGame(category: .add, type: .sequence, base: [2])
-        if var question = engine.getQuestion() {
-            try engine.activate(question: question)
-            let _ = try engine.evaluateQuestion(question: &question, answer: 3000)
-        }
+            try engine.qm!.activateNextQuestion()
+            let _ = try engine.qm!.evaluateQuestion(answer: 3000)
         
-        XCTAssert(engine.answeredQuestions == 1, "answeredQuestions should be 1 was \(engine.answeredQuestions)")
-        XCTAssert(engine.noOfRightAnswers == 0, "noOfRightAnswers should be 0, was \(engine.noOfRightAnswers)")
+        
+            XCTAssert(engine.qm!.answeredQuestions.count == 1, "answeredQuestions should be 1 was \(engine.qm!.answeredQuestions.count)")
+            XCTAssert(engine.qm!.noOfRightAnswers == 0, "noOfRightAnswers should be 0, was \(engine.qm!.noOfRightAnswers)")
         } catch {
             XCTFail()
         }
@@ -86,20 +76,19 @@ class QuestionStateTest: XCTestCase {
         do {
         let engine = MLMathMasterEngine()
         engine.newGame(category: .add, type: .sequence, base: [2])
-        if var question = engine.getQuestion() {
-            print("Question \(question)")
-            try engine.activate(question: question)
-            let _ = try engine.evaluateQuestion(question: &question, answer: 3000)
-        }
-        if var question = engine.getQuestion() {
-            print("Question \(question)")
-            try engine.activate(question: question)
-            let _ = try engine.evaluateQuestion(question: &question, answer: 3)
-            print("Question after \(question)")
-        }
+            try engine.qm!.activateNextQuestion()
+            let _ = try engine.qm!.evaluateQuestion(answer: 3000)
+            try engine.qm!.activateNextQuestion()
+            var question = engine.qm!.currentQuestion!
+            var answer = question.value1 + question.value2
+            let _ = try engine.qm!.evaluateQuestion(answer: answer)
+            try engine.qm!.activateNextQuestion()
+            question = engine.qm!.currentQuestion!
+            answer = question.value1 + question.value2
+            let _ = try engine.qm!.evaluateQuestion(answer: answer)
 
-        XCTAssert(engine.answeredQuestions == 2, "answeredQuestions should be 2 was \(engine.answeredQuestions)")
-        XCTAssert(engine.noOfRightAnswers == 1, "noOfRightAnswers should be 1, was \(engine.noOfRightAnswers)")
+            XCTAssert(engine.qm!.answeredQuestions.count == 3, "answeredQuestions should be 2 was \(engine.qm!.answeredQuestions)")
+            XCTAssert(engine.qm!.noOfRightAnswers == 2, "noOfRightAnswers should be 1, was \(engine.qm!.noOfRightAnswers)")
         } catch {
             XCTFail()
         }

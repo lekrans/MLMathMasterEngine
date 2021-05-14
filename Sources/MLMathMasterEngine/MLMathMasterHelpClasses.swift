@@ -100,12 +100,12 @@ public enum MLMathMasterGameType: Equatable{
 /// Game Data: Holds information about one game, like `category`, `type`, `base` and so on
 @available(iOS 13.0, *)
 public struct MLMathMasterGameData {
-    var category: MLMathMasterGameCategory
-    var type: MLMathMasterGameType
-    var base: [Int] = []
-    var timeAttackTime: MLMathMasterGameTimeAttackTime = .none
-    var groupSize: Int
-    var noOfQuestions: Int
+    public var category: MLMathMasterGameCategory
+    public var type: MLMathMasterGameType
+    public var base: [Int] = []
+    public var timeAttackTime: MLMathMasterGameTimeAttackTime = .none
+    public var groupSize: Int
+    public var noOfQuestions: Int
 }
 
 
@@ -448,10 +448,7 @@ public class MLMathMasterGameQuestionManager: ObservableObject {
     
     
     
-    
-    
-    
-    
+
     
     // MARK: - Public Methods
     

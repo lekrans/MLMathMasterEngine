@@ -14,7 +14,7 @@ public class MLMathMasterEngine: ObservableObject{
 
     // MARK: - public properties
     //    @Published public var questions: [MLMathMasterQuestion] = []
-    @Published public var qm: MLMathMasterGameQuestionManager!
+    @Published public var qm: MLMathMasterGameQuestionManager?
     @Published public var gameData: MLMathMasterGameData?
     @Published public var settings: MLMathMasterGameSettings
     @Published public var gameState: MLMathMasterGameState = .none {

@@ -250,6 +250,8 @@ enum MLMathMasterEngineNotifications: String {
 public protocol MLMathMasterGameQuestionManagerDelegate {
     func lastQuestionEvaluated()
     func firstQuestionActivated()
+    func questionActivated()
+    func questionsUpdated()
 }
 
 
@@ -394,7 +396,7 @@ public class MLMathMasterGameQuestionManager: ObservableObject {
         for i in (1...count) {
             currentQuestions.append(generateNewQuestion(index: i + offset))
         }
-        objectWillChange.send()
+        delegate?.questionsUpdated()
     }
     
     
@@ -483,6 +485,8 @@ public class MLMathMasterGameQuestionManager: ObservableObject {
         if isFirstQuestion() {
             delegate?.firstQuestionActivated()
         }
+        
+        delegate?.questionActivated()
     }
     
     /// Evaluates a MLMathMasterQuestion by calling `getResultOf` that returns the answer

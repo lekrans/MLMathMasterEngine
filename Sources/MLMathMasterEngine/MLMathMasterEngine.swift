@@ -14,7 +14,7 @@ public class MLMathMasterEngine: ObservableObject{
 
     // MARK: - public properties
     //    @Published public var questions: [MLMathMasterQuestion] = []
-    @Published public var qm: MLMathMasterGameQuestionManager?
+    @Published public var qm: MLMathMasterGameQuestionManager!
     @Published public var gameData: MLMathMasterGameData?
     @Published public var settings: MLMathMasterGameSettings
     @Published public var gameState: MLMathMasterGameState = .none {
@@ -64,7 +64,7 @@ public class MLMathMasterEngine: ObservableObject{
     
     
     
-    
+    // MARK: - Lifecycle
     
     // MARK: - Private methods
     
@@ -127,6 +127,14 @@ public class MLMathMasterEngine: ObservableObject{
 
 @available(iOS 13.0, *)
 extension MLMathMasterEngine: MLMathMasterGameQuestionManagerDelegate {
+    public func questionActivated() {
+        objectWillChange.send()
+    }
+    
+    public func questionsUpdated() {
+        objectWillChange.send()
+    }
+    
     public func lastQuestionEvaluated() {
         self.stopGame()
     }

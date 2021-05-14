@@ -265,15 +265,15 @@ public protocol MLMathMasterGameQuestionManagerDelegate {
 ///
 ///  Activate question, Evaluate question and so on refere to the currentQuestion
 ///
-public class MLMathMasterGameQuestionManager {
+public class MLMathMasterGameQuestionManager: ObservableObject {
     // MARK: - Private properties
     
     
     // MARK: - Public properties
-    public var gameData: MLMathMasterGameData
-    public var currentQuestions: [MLMathMasterQuestion] = []
-    public var currentQuestion: MLMathMasterQuestion?
-    public var answeredQuestions: [MLMathMasterQuestion] = []
+    @Published public var gameData: MLMathMasterGameData
+    @Published public var currentQuestions: [MLMathMasterQuestion] = []
+    @Published public var currentQuestion: MLMathMasterQuestion?
+    @Published public var answeredQuestions: [MLMathMasterQuestion] = []
     public var noOfRightAnswers: Int {
         return answeredQuestions.reduce(0) { (result, question) -> Int in
             guard let qResult = question.result, qResult.success else { return result}
@@ -394,6 +394,7 @@ public class MLMathMasterGameQuestionManager {
         for i in (1...count) {
             currentQuestions.append(generateNewQuestion(index: i + offset))
         }
+        objectWillChange.send()
     }
     
     

@@ -61,7 +61,7 @@ public enum MLMathMasterGameTimeAttackTime: CaseIterable, Identifiable, Hashable
         }
     }
     
-    var name: String {
+    public var name: String {
         switch  self {
         case .none:
             return "None"

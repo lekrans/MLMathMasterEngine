@@ -78,7 +78,7 @@ public enum MLMathMasterGameType: CaseIterable, Equatable{
             return [.sequence, .random(), .timeAttack()]
         }
     
-    func max() -> Double? {
+    public func max() -> Double? {
         switch self {
         case .random(let num):
             return Double(num)
@@ -88,14 +88,14 @@ public enum MLMathMasterGameType: CaseIterable, Equatable{
         }
     }
     
-    var isTimeAttack: Bool {
+    public var isTimeAttack: Bool {
         if case .timeAttack = self {
             return true
         }
         return false
     }
     
-    var name: String {
+    public var name: String {
         switch self {
         case .sequence:
             return "Sequence"

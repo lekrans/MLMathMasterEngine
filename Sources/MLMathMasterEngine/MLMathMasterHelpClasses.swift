@@ -193,7 +193,7 @@ public class MLMathMasterQuestion: Identifiable, Equatable {
     public var value1: Int
     public var value2: Int
     public var category: MLMathMasterGameCategory
-    fileprivate(set) var result: MLMathMasterQuestionResult?
+    public var result: MLMathMasterQuestionResult?
     fileprivate(set) var _active: Bool = false {
         willSet {
             if newValue == true {

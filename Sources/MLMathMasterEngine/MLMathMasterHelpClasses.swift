@@ -68,10 +68,15 @@ public enum MLMathMasterGameTimeAttackTime {
 // MARK: - GameType
 /// Game Type: What type of game(test) we are doing, like .sequence (like tables), .random
 @available(iOS 13.0, *)
-public enum MLMathMasterGameType: Equatable{
+public enum MLMathMasterGameType: CaseIterable, Equatable{
+    
     case sequence
     case random(_ max: Int = 10)
     case timeAttack(_ max: Int = 10)
+    
+    public static var allCases: [MLMathMasterGameType] {
+            return [.sequence, .random(), .timeAttack()]
+        }
     
     func max() -> Double? {
         switch self {
@@ -88,6 +93,17 @@ public enum MLMathMasterGameType: Equatable{
             return true
         }
         return false
+    }
+    
+    var name: String {
+        switch self {
+        case .sequence:
+            return "Sequence"
+        case .random( _):
+            return "Random"
+        case .timeAttack( _):
+            return "TimeAttack"
+        }
     }
 }
 

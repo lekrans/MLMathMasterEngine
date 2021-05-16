@@ -61,6 +61,23 @@ public enum MLMathMasterGameTimeAttackTime: CaseIterable, Identifiable, Hashable
         }
     }
     
+    var name: String {
+        switch  self {
+        case .none:
+            return "None"
+        case .test10Sek:
+            return "test 10 sek"
+        case .oneMin:
+            return "1 min"
+        case .twoMin:
+            return "2 min"
+        case .fiveMin:
+            return "5 min"
+        case .tenMin:
+            return "10 min"
+        }
+    }
+    
     public var id: MLMathMasterGameTimeAttackTime { self }
 }
 

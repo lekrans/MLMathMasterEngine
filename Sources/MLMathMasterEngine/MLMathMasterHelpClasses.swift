@@ -36,7 +36,7 @@ public enum MLMathMasterGameCategory {
 
 
 @available(iOS 13.0, *)
-public enum MLMathMasterGameTimeAttackTime {
+public enum MLMathMasterGameTimeAttackTime: CaseIterable, Identifiable, Hashable{
     case none
     case test10Sek
     case oneMin
@@ -44,7 +44,7 @@ public enum MLMathMasterGameTimeAttackTime {
     case fiveMin
     case tenMin
     
-    func asSeconds() -> Double {
+    public func asSeconds() -> Double {
         switch self {
         case .none:
             return 0
@@ -60,6 +60,8 @@ public enum MLMathMasterGameTimeAttackTime {
             return 600
         }
     }
+    
+    public var id: MLMathMasterGameTimeAttackTime { self }
 }
 
 

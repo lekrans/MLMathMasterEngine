@@ -56,6 +56,21 @@ final class QuestionsGeneratedTest: XCTestCase {
             XCTAssertTrue(question.value1 == 1 && question.value2 == i, "value1 should be 2 (was \(String(describing: question.value1)), value2 should be \(i) (was \(String(describing: question.value2)))")
         }
     }
+    
+    func testSubtractQuestionFirstValueIsLargerOrEqualToTheSecondValue() throws {
+        let engine = MLMathMasterEngine()
+        engine.newGame(category: .subtract, type: .random(100), base: [2, 3, 4, 5, 6, 7, 8, 9, 10], noOfQuestions: 50)
+        
+        try engine.qm?.activateNextQuestion()
+        while engine.gameState != .stopped {
+            let _ = try engine.qm!.evaluateQuestion(answer: 3)
+            let value1 = engine.qm!.currentQuestion!.value1
+            let value2 = engine.qm!.currentQuestion!.value2
+
+            XCTAssert(value1 >= value2, "value 1 \(value1) should be >= value 2 \(value2)")
+            try engine.qm!.activateNextQuestion()
+        }
+    }
 
     func testQuestionGeneratedFromSequenceWithTwoAsBase() throws {
         let engine = MLMathMasterEngine()

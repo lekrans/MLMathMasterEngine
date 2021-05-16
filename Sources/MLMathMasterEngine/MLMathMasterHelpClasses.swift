@@ -350,9 +350,15 @@ public class MLMathMasterGameQuestionManager: ObservableObject {
         let i = index ?? self.answeredQuestions.count
         let questionCategory = self.gameData.category != .random ? self.gameData.category : MLMathMasterGameCategory.random()
         
+        var value1 = getValue1()
+        var value2 = getValue2(index: i)
+        if questionCategory == .subtract && value2 > value1 {
+            (value1, value2) = (value2, value1)
+        }
+        
         return MLMathMasterQuestion(
-            value1: getValue1(),
-            value2: getValue2(index: i),
+            value1: value1,
+            value2: value2,
             category: questionCategory)
     }
     

@@ -247,9 +247,9 @@ public class MLMathMasterQuestion: Identifiable, Equatable {
 // MARK: - QuestionResult
 /// Result struct containing information about a question
 public struct MLMathMasterQuestionResult {
-    var answer: Int
-    var expectedAnswer: Int
-    var success: Bool {
+    public var answer: Int
+    public var expectedAnswer: Int
+    public var success: Bool {
         answer == expectedAnswer
     }
 }

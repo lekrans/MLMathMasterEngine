@@ -68,7 +68,7 @@ public enum MLMathMasterGameTimeAttackTime {
 // MARK: - GameType
 /// Game Type: What type of game(test) we are doing, like .sequence (like tables), .random
 @available(iOS 13.0, *)
-public enum MLMathMasterGameType: CaseIterable, Equatable, Identifiable {
+public enum MLMathMasterGameType: CaseIterable, Equatable, Identifiable, Hashable {
     public var id: String {self.name}
     
     

@@ -44,6 +44,11 @@ public enum MLMathMasterGameTimeAttackTime: CaseIterable, Identifiable, Hashable
     case fiveMin
     case tenMin
     
+    // Declare our own allCases so I can exclude none and test10sek
+    public static var allCases: [MLMathMasterGameTimeAttackTime] {
+        return [.oneMin, .twoMin, .fiveMin, .tenMin]
+    }
+    
     public func asSeconds() -> Double {
         switch self {
         case .none:
@@ -60,6 +65,8 @@ public enum MLMathMasterGameTimeAttackTime: CaseIterable, Identifiable, Hashable
             return 600
         }
     }
+    
+    
     
     public var name: String {
         switch  self {
